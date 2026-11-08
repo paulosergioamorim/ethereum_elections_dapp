@@ -175,6 +175,7 @@ function toSolidityProof(proof: Awaited<ReturnType<typeof generateProof>>) {
 /**
  * Monta um voto completo sem enviar: commitment, ciphertext e a prova Semaphore real.
  * `ciphertext` vem pronto (do `sealBallot`, ou bytes quaisquer quando o tlock não importa ao teste).
+ * Por padrão a prova é contra o grupo congelado da eleição; `group` permite provar contra outra árvore.
  */
 export async function prepareVote(
   semaphore: Semaphore,
@@ -183,10 +184,11 @@ export async function prepareVote(
   option: bigint,
   ciphertext: Hex,
   salt: Hex = randomSalt(),
+  group?: Group,
 ): Promise<PreparedVote> {
   const ballot = { option, salt };
   const commitment = commitBallot(ballot);
-  const group = await electionGroup(semaphore, election);
+  group ??= await electionGroup(semaphore, election);
   const scope = BigInt(election.address);
   const proof = await generateProof(
     identity,
@@ -209,9 +211,37 @@ export async function sendVote(
   });
 }
 
-/** Grupo vazio, para testes que comparam árvores montadas à mão. */
-export function emptyGroup(): Group {
-  return new Group();
+/** Grupo atual da factory, remontado pelos eventos. */
+export async function currentGroup(
+  semaphore: Semaphore,
+  factory: ElectionFactory,
+): Promise<Group> {
+  return buildGroup(await groupEvents(semaphore, await factory.read.groupId()));
+}
+
+/** Siblings reais da folha do eleitor na árvore atual, como o painel da autoridade fará. */
+export async function siblingsOf(
+  semaphore: Semaphore,
+  factory: ElectionFactory,
+  voter: Voter,
+): Promise<bigint[]> {
+  const group = await currentGroup(semaphore, factory);
+
+  return group
+    .generateMerkleProof(group.indexOf(voter.identity.commitment))
+    .siblings.map(BigInt);
+}
+
+/** `removeVoter` com os siblings reais. */
+export async function removeVoter(
+  semaphore: Semaphore,
+  factory: ElectionFactory,
+  voter: Voter,
+): Promise<Hex> {
+  return factory.write.removeVoter([
+    voter.wallet.account.address,
+    await siblingsOf(semaphore, factory, voter),
+  ]);
 }
 
 /**
