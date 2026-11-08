@@ -10,9 +10,9 @@ contract ElectionFactory is Ownable {
     address private immutable _base = address(new Election());
     Election[] private _elections;
 
-    modifier onlyAuthorizedUser() {
+    modifier onlyAuthorizedVoter() {
         if (!isAuthorized[msg.sender]) {
-            revert UnauthorizedUser();
+            revert UnauthorizedVoter();
         }
         _;
     }
@@ -30,62 +30,65 @@ contract ElectionFactory is Ownable {
     uint256 public immutable groupId;
 
     event ElectionCreated(address indexed election);
-    event VoterAuthorized(address indexed user);
-    event VoterRevoked(address indexed user);
-    event IdentityRegistered(address indexed user, uint256 commitment);
+    event VoterAuthorized(address indexed voter);
+    event VoterRemoved(address indexed voter);
+    event IdentityRegistered(address indexed voter, uint256 commitment);
 
     error InvalidElection();
-    error InvalidUserAddress();
+    error InvalidVoterAddress();
     error AlreadyRegisteredIdentityCommitment();
     error CommitmentCannotBeZero();
-    error UnauthorizedUser();
+    error UnauthorizedVoter();
     error RenounceDisabled();
 
-    function addAuthorizedUsers(address[] calldata users) external onlyOwner {
-        for (uint256 i = 0; i < users.length; ++i) {
-            address user = users[i];
+    function addAuthorizedVoters(address[] calldata voters) external onlyOwner {
+        for (uint256 i = 0; i < voters.length; ++i) {
+            address voter = voters[i];
 
-            if (user == address(0)) {
-                revert InvalidUserAddress();
+            if (voter == address(0)) {
+                revert InvalidVoterAddress();
             }
 
-            isAuthorized[user] = true;
-            emit VoterAuthorized(user);
+            isAuthorized[voter] = true;
+            emit VoterAuthorized(voter);
         }
     }
 
-    function revokeVoter(address user, uint256[] calldata siblings) external onlyOwner {
-        if (!isAuthorized[user]) {
-            return;
+    function removeVoter(
+        address voter,
+        uint256[] calldata siblings
+    ) external onlyOwner {
+        if (!isAuthorized[voter]) {
+            revert UnauthorizedVoter();
         }
 
-        uint256 commitment = commitmentOf[user];
+        uint256 commitment = commitmentOf[voter];
 
         if (commitment != 0) {
             sem.removeMember(groupId, commitment, siblings);
-            commitmentOf[user] = 0;
+            commitmentOf[voter] = 0;
         }
 
-        isAuthorized[user] = false;
-        emit VoterRevoked(user);
+        isAuthorized[voter] = false;
+        emit VoterRemoved(voter);
     }
 
     function registerIdentityCommitment(
         uint256 identityCommitment
-    ) external onlyAuthorizedUser {
+    ) external onlyAuthorizedVoter {
         if (identityCommitment == 0) {
             revert CommitmentCannotBeZero();
         }
 
-        address user = msg.sender;
+        address voter = msg.sender;
 
-        if (commitmentOf[user] != 0) {
+        if (commitmentOf[voter] != 0) {
             revert AlreadyRegisteredIdentityCommitment();
         }
 
-        commitmentOf[user] = identityCommitment;
+        commitmentOf[voter] = identityCommitment;
         sem.addMember(groupId, identityCommitment);
-        emit IdentityRegistered(user, identityCommitment);
+        emit IdentityRegistered(voter, identityCommitment);
     }
 
     function createElection(
