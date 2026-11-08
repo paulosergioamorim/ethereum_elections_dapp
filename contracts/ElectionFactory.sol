@@ -14,6 +14,7 @@ contract ElectionFactory is Ownable {
         if (!isAuthorized[msg.sender]) {
             revert UnauthorizedVoter();
         }
+
         _;
     }
 
@@ -34,7 +35,6 @@ contract ElectionFactory is Ownable {
     event VoterRemoved(address indexed voter);
     event IdentityRegistered(address indexed voter, uint256 commitment);
 
-    error InvalidElection();
     error InvalidVoterAddress();
     error AlreadyRegisteredIdentityCommitment();
     error CommitmentCannotBeZero();
