@@ -1,6 +1,6 @@
 import { UserCheckIcon, UsersIcon, VoteIcon } from "lucide-react";
 import {
-  AuthorityNotice,
+  AuthorityGuard,
   AuthorizeVotersCard,
   CreateElectionCard,
   VotersCard,
@@ -9,9 +9,17 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { useElections } from "@/elections";
 import { useVoters } from "@/factory";
-import { ConnectWalletNotice } from "@/wallet";
 
+/** A aba só aparece para a conta dona da factory; para as outras, a tela do `AuthorityGuard`. */
 export function Admin() {
+  return (
+    <AuthorityGuard>
+      <AuthorityPanel />
+    </AuthorityGuard>
+  );
+}
+
+function AuthorityPanel() {
   const voters = useVoters();
   const elections = useElections();
   const registered = voters.data?.filter((voter) => voter.commitment !== 0n).length;
@@ -21,7 +29,7 @@ export function Admin() {
       <PageHeader
         eyebrow="Autoridade"
         title="Autoridade eleitoral"
-        description="Autorize carteiras, acompanhe os cadastros e crie eleições. Só a conta dona da factory pode administrar; os dados são públicos."
+        description="Autorize carteiras, acompanhe os cadastros e crie eleições."
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -44,9 +52,6 @@ export function Admin() {
           caption="Criadas por esta factory"
         />
       </div>
-
-      <ConnectWalletNotice>Conecte a carteira dona da factory para administrar.</ConnectWalletNotice>
-      <AuthorityNotice />
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="space-y-6">

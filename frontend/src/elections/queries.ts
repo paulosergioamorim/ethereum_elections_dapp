@@ -4,6 +4,8 @@ import { electionAbi, electionFactoryAbi, factoryAddress } from "@/contracts";
 import { factoryInfoQueryOptions, fetchVoterGroup } from "@/factory";
 import { freshBlockNumber } from "@/lib/block-floor";
 import { publicClient } from "@/lib/chain";
+import { byChainOrder, fetchLogsInRanges } from "@/lib/logs";
+import type { CastBallot, OpenedBallot } from "./ballots";
 import { electionKeys } from "./keys";
 
 /** Endereços das eleições criadas pela factory, na ordem de criação. */
@@ -117,7 +119,7 @@ export function electionResultsQueryOptions(address: Address | undefined) {
   return queryOptions({
     queryKey: electionKeys.results(address ?? "none"),
     queryFn: address ? () => fetchResults(address) : skipToken,
-    refetchInterval: 15_000,
+    // sem polling: os eventos da eleição (useElectionEvents) e as próprias transações invalidam
   });
 }
 
@@ -136,6 +138,70 @@ export function electionGroupQueryOptions(election: ElectionDetails | undefined)
           })
       : skipToken,
     // a árvore de uma eleição nunca muda
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * Cédulas registradas (`VoteCast`) e as já apuradas (`VoteRevealed`), lidas no mesmo bloco, desde a
+ * criação da eleição. Os ciphertexts só existem nos eventos: o storage guarda só os commitments.
+ */
+async function fetchBallots(election: ElectionDetails): Promise<CastBallot[]> {
+  const blocks = { fromBlock: election.createdAtBlock, toBlock: await freshBlockNumber() };
+  const read = { address: election.address, abi: electionAbi } as const;
+  const [cast, revealed] = await Promise.all([
+    fetchLogsInRanges(blocks, (range) =>
+      publicClient.getContractEvents({ ...read, eventName: "VoteCast", ...range }),
+    ),
+    fetchLogsInRanges(blocks, (range) =>
+      publicClient.getContractEvents({ ...read, eventName: "VoteRevealed", ...range }),
+    ),
+  ]);
+
+  const revealedOptions = new Map(
+    revealed.map((log) => [log.args.index!, log.args.option!] as const),
+  );
+  // um `VoteCast` por índice; o Map descarta repetições de um RPC que devolva o mesmo log duas vezes
+  const ballots = new Map<bigint, CastBallot>();
+
+  for (const log of cast.sort(byChainOrder)) {
+    const index = log.args.index!;
+
+    ballots.set(index, {
+      index,
+      commitment: log.args.commitment!,
+      ciphertext: log.args.ciphertext!,
+      revealedOption: revealedOptions.get(index),
+    });
+  }
+
+  return [...ballots.values()].sort((a, b) => (a.index < b.index ? -1 : 1));
+}
+
+export function electionBallotsQueryOptions(election: ElectionDetails | undefined) {
+  return queryOptions({
+    queryKey: electionKeys.ballots(election?.address ?? "none"),
+    queryFn: election ? () => fetchBallots(election) : skipToken,
+  });
+}
+
+async function openInBrowser(ballots: readonly CastBallot[]): Promise<OpenedBallot[]> {
+  const { openBallots } = await import("./tally-crypto");
+
+  return openBallots(ballots);
+}
+
+/**
+ * Cédulas abertas no navegador com o tlock. Decifrar é determinístico, então o resultado não fica
+ * velho; a chave muda só se aparecerem cédulas novas. Sem `ballots` (ou fora da apuração), não abre.
+ */
+export function openedBallotsQueryOptions(
+  election: ElectionDetails | undefined,
+  ballots: readonly CastBallot[] | undefined,
+) {
+  return queryOptions({
+    queryKey: [...electionKeys.opened(election?.address ?? "none"), ballots?.length ?? 0],
+    queryFn: ballots ? () => openInBrowser(ballots) : skipToken,
     staleTime: Infinity,
   });
 }

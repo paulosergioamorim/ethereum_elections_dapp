@@ -37,6 +37,12 @@ export const publicClient = createPublicClient({
   batch: { multicall: true },
 });
 
+/**
+ * Eventos ao vivo só por WebSocket (`eth_subscribe`). Só com HTTP, o `watchContractEvent` do viem faria
+ * polling; sem WebSocket, o app relê depois das próprias transações e pelo botão de atualizar.
+ */
+export const liveEvents = Boolean(env.rpcWsUrl);
+
 /** Link do explorador de blocos para um endereço (a rede local não tem explorador). */
 export function explorerAddressUrl(address: string): string | undefined {
   const explorer = appChain.blockExplorers?.default.url;

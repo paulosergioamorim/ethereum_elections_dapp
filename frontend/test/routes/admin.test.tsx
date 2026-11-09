@@ -32,12 +32,16 @@ describe("Admin (aba da autoridade)", () => {
         { address: alice, authorized: false },
       ],
     });
+    connectReturningUser({ accounts: [alice] });
     renderRoute("/admin");
 
     expect(within(await voterRow(bob)).getByText("Cadastrado")).toBeInTheDocument();
     expect(within(await voterRow(carol)).getByText("Aguardando cadastro")).toBeInTheDocument();
     // autorizada e depois removida: não aparece
-    expect(screen.queryByText(shortAddress(alice))).not.toBeInTheDocument();
+    // (o endereço dela continua no menu da carteira, fora da lista)
+    expect(
+      screen.queryAllByText(shortAddress(alice)).filter((element) => element.closest("li")),
+    ).toHaveLength(0);
 
     const authorized = screen.getByRole("group", { name: "Carteiras autorizadas" });
     const registered = screen.getByRole("group", { name: "Eleitores cadastrados" });
@@ -45,19 +49,40 @@ describe("Admin (aba da autoridade)", () => {
     expect(await within(registered).findByText("1")).toBeInTheDocument();
   });
 
-  it("should warn when the active account is not the authority and switch to it", async () => {
+  it("should hide the page from an account that is not the authority and switch to it", async () => {
     mockChain({ owner: bob });
     connectReturningUser({ accounts: [alice, bob], active: alice });
     const user = userEvent.setup();
     renderRoute("/admin");
 
     expect(await screen.findByText(/a conta ativa não é a autoridade/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Endereços")).not.toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: "Principal" });
+    expect(within(nav).queryByRole("link", { name: "Autoridade" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /usar a conta da autoridade/i }));
 
-    await waitFor(() =>
-      expect(screen.queryByText(/a conta ativa não é a autoridade/i)).not.toBeInTheDocument(),
-    );
+    expect(await screen.findByLabelText("Endereços")).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: "Autoridade" })).toBeInTheDocument();
+  });
+
+  it("should not offer to switch when the authority is not among the wallet accounts", async () => {
+    mockChain({ owner: bob });
+    connectReturningUser({ accounts: [alice] });
+    renderRoute("/admin");
+
+    expect(await screen.findByText(/a conta ativa não é a autoridade/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /usar a conta da autoridade/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /ir para as eleições/i })).toHaveAttribute("href", "/");
+  });
+
+  it("should ask to connect the authority wallet before showing anything", async () => {
+    mockChain({ owner: alice, voters: [{ address: bob }] });
+    renderRoute("/admin");
+
+    expect(await screen.findByText(/conecte a carteira da autoridade/i)).toBeInTheDocument();
+    expect(screen.queryByText(shortAddress(bob))).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Carteiras autorizadas" })).not.toBeInTheDocument();
   });
 
   it("should authorize the typed wallets", async () => {

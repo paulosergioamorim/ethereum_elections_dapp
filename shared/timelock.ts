@@ -31,6 +31,11 @@ export async function roundForTimestamp(
   return roundTime(info, round) < timeMs ? round + 1 : round;
 }
 
+/** Momento (ms desde a época Unix) em que a rodada `round` do drand é publicada. */
+export async function roundTimeMs(round: number, client: ChainClient): Promise<number> {
+  return roundTime(await client.chain().info(), round);
+}
+
 /**
  * Cifra `abi.encode(option, salt)` para a rodada `round`.
  * Devolve o ciphertext (texto armado do age) em bytes hex, pronto para o `vote`.

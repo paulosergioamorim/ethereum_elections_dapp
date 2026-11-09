@@ -1,36 +1,24 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { LockIcon, RefreshCwIcon, TrophyIcon } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
-import { PlannedSection } from "@/components/planned-section";
 import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
-import { useElectionResults } from "../hooks";
+import { refreshTally, useElectionResults } from "../hooks";
 import { formatTimestamp, phaseAt } from "../phase";
 import type { ElectionDetails } from "../queries";
+import { ResultRow } from "./result-row";
+import { RevealPanel } from "./reveal-panel";
 
-function ResultRow({ label, votes, revealed }: { label: string; votes: bigint; revealed: bigint }) {
-  const percent = revealed > 0n ? Number((votes * 1000n) / revealed) / 10 : 0;
-
-  return (
-    <li className="space-y-1.5">
-      <div className="flex items-baseline justify-between gap-3 text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground tabular-nums">
-          {votes.toString()} · {percent.toLocaleString("pt-BR")}%
-        </span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
-      </div>
-    </li>
-  );
-}
-
-/** Contagem pública, lida direto do contrato. Fechada até o fim da votação. */
+/**
+ * Contagem pública, lida direto do contrato e atualizada pelos eventos da eleição. Fechada até o fim
+ * da votação; depois, qualquer pessoa abre as cédulas e publica a apuração.
+ */
 export function ResultsCard({ election }: { election: ElectionDetails }) {
   const phase = phaseAt(useNow() / 1000, election);
   const results = useElectionResults(election.address);
+  const queryClient = useQueryClient();
 
   let body;
 
@@ -53,16 +41,16 @@ export function ResultsCard({ election }: { election: ElectionDetails }) {
 
     body = (
       <>
-        <ul className="space-y-4">
+        <ul className="space-y-4" aria-label="Resultado publicado">
           {election.candidates.map((candidate, index) => (
             <ResultRow
               key={index}
               label={candidate}
               votes={tally[index] ?? 0n}
-              revealed={revealed}
+              base={revealed}
             />
           ))}
-          <ResultRow label="Nulos" votes={nullVotes} revealed={revealed} />
+          <ResultRow label="Nulos" votes={nullVotes} base={revealed} />
         </ul>
 
         <p className="mt-5 text-xs text-muted-foreground">
@@ -72,10 +60,9 @@ export function ResultsCard({ election }: { election: ElectionDetails }) {
         </p>
 
         {unrevealed > 0n && (
-          <PlannedSection
-            className="mt-5 border-t pt-5"
-            items={["Abrir as cédulas com tlock e revelá-las em lote (qualquer pessoa)"]}
-          />
+          <div className="mt-5 border-t pt-5">
+            <RevealPanel election={election} />
+          </div>
         )}
       </>
     );
@@ -87,11 +74,12 @@ export function ResultsCard({ election }: { election: ElectionDetails }) {
       title="Apuração"
       description="Resultado verificável por qualquer pessoa, direto da blockchain."
       action={
+        // rede de segurança se o WebSocket cair (ou se não houver WebSocket configurado)
         <Button
           variant="outline"
           size="icon-sm"
           aria-label="Atualizar apuração"
-          onClick={() => void results.refetch()}
+          onClick={() => void refreshTally(queryClient, election.address)}
           disabled={results.isFetching}
         >
           <RefreshCwIcon className={cn(results.isFetching && "animate-spin")} />

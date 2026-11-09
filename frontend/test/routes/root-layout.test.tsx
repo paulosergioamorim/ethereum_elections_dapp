@@ -10,7 +10,8 @@ describe("RootLayout", () => {
     const nav = await screen.findByRole("navigation", { name: "Principal" });
     expect(nav).toHaveTextContent("Eleições");
     expect(nav).toHaveTextContent("Cadastro");
-    expect(nav).toHaveTextContent("Autoridade");
+    // sem a conta dona da factory, a aba da autoridade nem aparece
+    expect(within(nav).queryByRole("link", { name: "Autoridade" })).not.toBeInTheDocument();
   });
 
   it("should show the app network and the latest block in the header", async () => {

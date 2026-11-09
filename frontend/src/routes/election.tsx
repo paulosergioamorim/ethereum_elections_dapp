@@ -5,11 +5,13 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import {
+  BallotsCard,
   ElectionNotFoundError,
   ElectionStats,
   formatTimestamp,
   ResultsCard,
   useElection,
+  useElectionEvents,
   VoteCard,
 } from "@/elections";
 import { NotFound } from "@/routes/not-found";
@@ -19,6 +21,8 @@ export function Election() {
   const { address: param } = useParams();
   const address = param && isAddress(param) ? getAddress(param) : undefined;
   const election = useElection(address);
+  // contagem e cédulas ao vivo, por eventos (só depois de confirmar que o endereço é uma eleição)
+  useElectionEvents(election.data?.address);
 
   if (!address) {
     return <NotFound />;
@@ -79,6 +83,8 @@ export function Election() {
         <VoteCard election={data} />
         <ResultsCard election={data} />
       </div>
+
+      <BallotsCard election={data} />
     </div>
   );
 }

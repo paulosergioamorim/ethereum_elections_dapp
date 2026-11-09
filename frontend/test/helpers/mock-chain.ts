@@ -1,5 +1,5 @@
 import { buildGroup } from "@elections/shared/group";
-import { encodeEventTopics, type Address } from "viem";
+import { encodeEventTopics, type Address, type Hex } from "viem";
 import { vi } from "vitest";
 import { electionFactoryAbi, factoryAddress } from "@/contracts";
 import { publicClient } from "@/lib/chain";
@@ -12,6 +12,15 @@ export type MockVoter = {
   commitment?: bigint;
   /** Bloco do cadastro (evento `MemberAdded`). Padrão: 2. */
   registeredAtBlock?: bigint;
+};
+
+export type MockBallot = {
+  commitment: Hex;
+  ciphertext: Hex;
+  /** Já apurada: gera o `VoteRevealed` com esta opção. */
+  revealedOption?: bigint;
+  /** Apurada por outra pessoa depois da leitura dos eventos: só `isRevealed` sabe disso. */
+  revealedMeanwhile?: boolean;
 };
 
 export type MockElection = {
@@ -27,6 +36,8 @@ export type MockElection = {
   nullVotes?: bigint;
   unrevealed?: bigint;
   revealed?: bigint;
+  /** Cédulas na ordem dos índices; cada uma num bloco depois da criação. */
+  ballots?: MockBallot[];
 };
 
 const groupId = 1n;
@@ -50,12 +61,15 @@ export function mockChain({
   owner,
   voters = [],
   elections = [],
-  election,
+  election: main,
+  details = [],
 }: {
   owner: Address;
   voters?: MockVoter[];
   elections?: Address[];
   election?: MockElection;
+  /** Outras eleições com dados próprios (título, prazos), lidas pelo endereço. */
+  details?: MockElection[];
 }) {
   // cadastros em ordem de bloco (e de lista, no mesmo bloco); o índice na árvore segue essa ordem
   const members = voters
@@ -78,17 +92,21 @@ export function mockChain({
   }
 
   const group = groupUntil(2n ** 64n);
-  const createdAtBlock = election?.createdAtBlock ?? 10n;
-  const electionRoot = election ? (groupUntil(createdAtBlock).root ?? 0n) : 0n;
+  const createdAtBlock = main?.createdAtBlock ?? 10n;
+  const electionRoot = main ? (groupUntil(createdAtBlock).root ?? 0n) : 0n;
 
   vi.mocked(publicClient.readContract).mockImplementation((async ({
+    address,
     functionName,
     args,
   }: {
+    address: Address;
     functionName: string;
     args?: readonly unknown[];
   }) => {
     const voter = voters.find((candidate) => sameAddress(args?.[0], candidate.address));
+    // leituras de uma eleição vão para a dela; sem dados próprios, para a `election` principal
+    const election = details.find((detail) => sameAddress(address, detail.address)) ?? main;
 
     switch (functionName) {
       // factory
@@ -102,7 +120,9 @@ export function mockChain({
         return elections;
       case "isElection":
         return (
-          (election !== undefined && sameAddress(args?.[0], election.address)) ||
+          [main, ...details].some(
+            (detail) => detail !== undefined && sameAddress(args?.[0], detail.address),
+          ) ||
           elections.some((address) => sameAddress(args?.[0], address))
         );
       case "isAuthorized":
@@ -133,6 +153,11 @@ export function mockChain({
         ];
       case "revealedCount":
         return election?.revealed ?? 0n;
+      case "isRevealed": {
+        const ballot = election?.ballots?.[Number(args?.[0])];
+
+        return ballot ? ballot.revealedOption !== undefined || ballot.revealedMeanwhile === true : false;
+      }
       default:
         throw new Error(`Leitura não simulada nos testes: ${functionName}`);
     }
@@ -156,6 +181,29 @@ export function mockChain({
       blockNumber: member.block,
       logIndex: Number(member.index),
     })),
+    ...(main?.ballots ?? []).flatMap((ballot, index) => [
+      {
+        eventName: "VoteCast",
+        args: {
+          nullifier: BigInt(index + 1),
+          index: BigInt(index),
+          commitment: ballot.commitment,
+          ciphertext: ballot.ciphertext,
+        },
+        blockNumber: createdAtBlock + 1n + BigInt(index),
+        logIndex: 0,
+      },
+      ...(ballot.revealedOption === undefined
+        ? []
+        : [
+            {
+              eventName: "VoteRevealed",
+              args: { index: BigInt(index), option: ballot.revealedOption },
+              blockNumber: createdAtBlock + 1_000n,
+              logIndex: index,
+            },
+          ]),
+    ]),
   ];
 
   // como um RPC de verdade: só os eventos do tipo e da faixa de blocos pedidos

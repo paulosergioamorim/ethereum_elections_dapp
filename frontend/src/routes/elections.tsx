@@ -6,6 +6,7 @@ import {
   UsersIcon,
   VoteIcon,
 } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { InfoNote } from "@/components/info-note";
 import { PageHeader } from "@/components/page-header";
@@ -46,6 +47,7 @@ function voterSituation(
 export function Elections() {
   const { status, account } = useWallet();
   const elections = useElections();
+  const [query, setQuery] = useState("");
   const voter = useVoterStatus(account);
   const situation = voterSituation(status === "connected", voter.data);
 
@@ -141,9 +143,17 @@ export function Elections() {
               <RefreshCwIcon className={cn(elections.isFetching && "animate-spin")} />
             </Button>
           }
-          toolbar={<SearchInput placeholder="Buscar eleição…" aria-label="Buscar eleição" disabled />}
+          toolbar={
+            <SearchInput
+              placeholder="Buscar por título, endereço ou número…"
+              aria-label="Buscar eleição"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              disabled={!elections.data?.length}
+            />
+          }
         >
-          <ElectionList elections={elections.data} isError={elections.isError} />
+          <ElectionList elections={elections.data} isError={elections.isError} query={query} />
         </SectionCard>
       </div>
     </div>

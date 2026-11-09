@@ -1,4 +1,5 @@
 import { createBrowserRouter, type RouteObject } from "react-router";
+import { About } from "@/routes/about";
 import { Admin } from "@/routes/admin";
 import { Election } from "@/routes/election";
 import { Elections } from "@/routes/elections";
@@ -17,6 +18,7 @@ export const routes: RouteObject[] = [
       { index: true, Component: Elections },
       { path: "elections/:address", Component: Election },
       { path: "register", Component: Register },
+      { path: "about", Component: About },
       { path: "admin", Component: Admin },
       { path: "*", Component: NotFound },
     ],

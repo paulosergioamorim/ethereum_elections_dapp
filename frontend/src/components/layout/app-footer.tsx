@@ -2,8 +2,7 @@ import { VoteIcon } from "lucide-react";
 import { factoryAddress } from "@/contracts";
 import { appChain, explorerAddressUrl } from "@/lib/chain";
 import { shortAddress } from "@/lib/format";
-
-const REPOSITORY_URL = "https://github.com/paulosergioamorim/ethereum_elections_dapp";
+import { REPOSITORY_URL } from "@/lib/project";
 
 /** Logo do GitHub (Octicons). O lucide não traz mais ícones de marcas. */
 function GitHubMark({ className }: { className?: string }) {

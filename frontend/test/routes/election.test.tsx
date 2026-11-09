@@ -3,8 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { decodeFunctionData, getAddress, type Address } from "viem";
 import { describe, expect, it, vi } from "vitest";
 import { electionAbi } from "@/contracts";
+import { REVEAL_BATCH_SIZE, type OpenedBallot } from "@/elections";
+import { openBallots } from "@/elections/tally-crypto";
 import { prepareVote } from "@/elections/vote-crypto";
-import { mockChain, secondsFromNow, type MockElection } from "../helpers/mock-chain";
+import { publicClient } from "@/lib/chain";
+import {
+  mockChain,
+  secondsFromNow,
+  type MockBallot,
+  type MockElection,
+} from "../helpers/mock-chain";
 import { alice, bob, connectReturningUser, testIdentity } from "../helpers/mock-wallet";
 import { renderRoute } from "../helpers/render";
 
@@ -25,6 +33,11 @@ const prepared = vi.hoisted(() => ({
 
 vi.mock("@/elections/vote-crypto", () => ({
   prepareVote: vi.fn(async () => prepared),
+}));
+
+// abrir cédulas fala com o drand; aqui cada teste diz o que o tlock devolveria
+vi.mock("@/elections/tally-crypto", () => ({
+  openBallots: vi.fn(async () => []),
 }));
 
 // com checksum, como a página padroniza o endereço da URL
@@ -155,5 +168,173 @@ describe("Election (página da eleição)", () => {
     renderRoute(`/elections/${electionAddress}`);
 
     expect(await screen.findByText("Eleição não encontrada.")).toBeInTheDocument();
+  });
+
+  describe("apuração", () => {
+    const salt = (n: number) => `0x${n.toString(16).padStart(64, "0")}` as const;
+    const sealed = (n: number): MockBallot => ({
+      commitment: `0x${(n + 1).toString(16).padStart(64, "a")}`,
+      ciphertext: `0xc1${n.toString(16).padStart(4, "0")}`,
+    });
+
+    function endedElection(overrides: Partial<MockElection> = {}): MockElection {
+      return votingElection({
+        votingStart: secondsFromNow(-7_200),
+        votingEnd: secondsFromNow(-60),
+        ...overrides,
+      });
+    }
+
+    /** Cédula 0 já apurada (Bruno), 1 abre para Ana, 2 não confere com o commitment. */
+    function mixedTally() {
+      mockChain({
+        owner: bob,
+        election: endedElection({
+          ballots: [{ ...sealed(0), revealedOption: 1n }, sealed(1), sealed(2)],
+          tally: [0n, 1n],
+          revealed: 1n,
+          unrevealed: 2n,
+        }),
+      });
+      vi.mocked(openBallots).mockResolvedValue([
+        { index: 1n, status: "opened", option: 0n, salt: salt(1) },
+        { index: 2n, status: "invalid" },
+      ]);
+    }
+
+    it("should publish only the ballots opened here with revealBatch", async () => {
+      mixedTally();
+      const wallet = connectReturningUser({ accounts: [alice] });
+      const user = userEvent.setup();
+      renderRoute(`/elections/${electionAddress}`);
+
+      await user.click(await screen.findByRole("button", { name: "Apurar 1 cédula(s)" }));
+
+      await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+      expect(getAddress(wallet.transactions[0].to)).toBe(electionAddress);
+      const call = decodeFunctionData({ abi: electionAbi, data: wallet.transactions[0].data });
+      expect(call.functionName).toBe("revealBatch");
+      expect(call.args).toEqual([[1n], [0n], [salt(1)]]);
+
+      // só as fechadas no contrato vão para o tlock, com o ciphertext do evento
+      const [opened] = vi.mocked(openBallots).mock.calls[0];
+      expect(opened.map((ballot) => ballot.ciphertext)).toEqual([
+        sealed(0).ciphertext,
+        sealed(1).ciphertext,
+        sealed(2).ciphertext,
+      ]);
+      expect(opened[0].revealedOption).toBe(1n);
+    });
+
+    it("should preview the tally without a wallet and flag invalid ballots", async () => {
+      mixedTally();
+      renderRoute(`/elections/${electionAddress}`);
+
+      const preview = await screen.findByRole("list", { name: "Prévia da apuração" });
+      // Bruno (já apurado) + Ana (aberta aqui): 1 de 2 cada
+      expect(within(preview).getAllByText("1 · 50%")).toHaveLength(2);
+      expect(screen.getByText(/1 cédula\(s\) inválida\(s\)/)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Apurar/ })).not.toBeInTheDocument();
+
+      const ballots = screen.getByRole("list", { name: "Cédulas" });
+      expect(within(ballots).getByText("Apurada: Bruno")).toBeInTheDocument();
+      expect(within(ballots).getByText("Aberta aqui: Ana")).toBeInTheDocument();
+      expect(within(ballots).getByText("Inválida")).toBeInTheDocument();
+    });
+
+    it("should split the reveal into batches", async () => {
+      const total = REVEAL_BATCH_SIZE + 1;
+      mockChain({
+        owner: bob,
+        election: endedElection({
+          ballots: Array.from({ length: total }, (_, i) => sealed(i)),
+          unrevealed: BigInt(total),
+        }),
+      });
+      vi.mocked(openBallots).mockResolvedValue(
+        Array.from({ length: total }, (_, i): OpenedBallot => ({
+          index: BigInt(i),
+          status: "opened",
+          option: BigInt(i % 2),
+          salt: salt(i),
+        })),
+      );
+      const wallet = connectReturningUser({ accounts: [alice] });
+      const user = userEvent.setup();
+      renderRoute(`/elections/${electionAddress}`);
+
+      await user.click(await screen.findByRole("button", { name: `Apurar ${total} cédula(s)` }));
+
+      await waitFor(() => expect(wallet.transactions).toHaveLength(2));
+      const [first, second] = wallet.transactions.map(
+        (tx) => decodeFunctionData({ abi: electionAbi, data: tx.data }).args as readonly bigint[][],
+      );
+      expect(first[0]).toHaveLength(REVEAL_BATCH_SIZE);
+      expect(second[0]).toEqual([BigInt(REVEAL_BATCH_SIZE)]);
+    });
+
+    it("should skip ballots someone else revealed after the page loaded", async () => {
+      mockChain({
+        owner: bob,
+        election: endedElection({
+          ballots: [{ ...sealed(0), revealedMeanwhile: true }, sealed(1)],
+          unrevealed: 2n,
+        }),
+      });
+      vi.mocked(openBallots).mockResolvedValue([
+        { index: 0n, status: "opened", option: 0n, salt: salt(0) },
+        { index: 1n, status: "opened", option: 1n, salt: salt(1) },
+      ]);
+      const wallet = connectReturningUser({ accounts: [alice] });
+      const user = userEvent.setup();
+      renderRoute(`/elections/${electionAddress}`);
+
+      await user.click(await screen.findByRole("button", { name: "Apurar 2 cédula(s)" }));
+
+      await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+      const call = decodeFunctionData({ abi: electionAbi, data: wallet.transactions[0].data });
+      expect(call.args).toEqual([[1n], [1n], [salt(1)]]);
+    });
+
+    it("should say when ballots wait for the drand round", async () => {
+      mockChain({ owner: bob, election: endedElection({ ballots: [sealed(0)], unrevealed: 1n }) });
+      vi.mocked(openBallots).mockResolvedValue([
+        { index: 0n, status: "too-early", availableAt: Date.now() + 60 * 60_000 },
+      ]);
+      renderRoute(`/elections/${electionAddress}`);
+
+      expect(await screen.findByText(/aguardando a rodada do drand/)).toBeInTheDocument();
+      expect(screen.getByText("Aguardando o drand")).toBeInTheDocument();
+    });
+
+    it("should keep ballots sealed while voting is open", async () => {
+      mockChain({ owner: bob, election: votingElection({ ballots: [sealed(0)] }) });
+      renderRoute(`/elections/${electionAddress}`);
+
+      const ballots = await screen.findByRole("list", { name: "Cédulas" });
+      expect(within(ballots).getByText("Selada")).toBeInTheDocument();
+      expect(openBallots).not.toHaveBeenCalled();
+    });
+
+    it("should reread the tally when the election emits an event", async () => {
+      mockChain({ owner: bob, election: endedElection({ tally: [1n, 0n], revealed: 1n }) });
+      renderRoute(`/elections/${electionAddress}`);
+
+      await screen.findByText("Todas as cédulas foram apuradas.");
+      await waitFor(() => expect(publicClient.watchContractEvent).toHaveBeenCalled());
+      const [{ address, onLogs }] = vi.mocked(publicClient.watchContractEvent).mock.calls[0] as unknown as [
+        { address: Address; onLogs: (logs: { blockNumber: bigint }[]) => void },
+      ];
+      expect(address).toBe(electionAddress);
+
+      const resultReads = () =>
+        vi.mocked(publicClient.readContract).mock.calls.filter(
+          ([call]) => (call as { functionName: string }).functionName === "results",
+        ).length;
+      const before = resultReads();
+      onLogs([{ blockNumber: 20n }]);
+
+      await waitFor(() => expect(resultReads()).toBeGreaterThan(before));
+    });
   });
 });

@@ -23,7 +23,11 @@ export function ElectionStats({ election }: { election: ElectionDetails }) {
         icon={InboxIcon}
         label="Cédulas registradas"
         value={results.data?.total.toString()}
-        caption="Votos selados na blockchain"
+        caption={
+          results.data
+            ? `Na blockchain; ${results.data.unrevealed.toString()} ainda selada(s)`
+            : "Votos registrados na blockchain"
+        }
       />
       <StatCard
         icon={LockOpenIcon}

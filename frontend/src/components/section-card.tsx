@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
  * - `inline`: ícone ao lado do título (cards de lista, como "Eleições").
  */
 export function SectionCard({
+  id,
   icon: Icon,
   title,
   description,
@@ -18,6 +19,8 @@ export function SectionCard({
   className,
   children,
 }: {
+  /** Âncora para links dentro da página (`#id`). */
+  id?: string;
   icon: LucideIcon;
   title: string;
   description?: string;
@@ -30,7 +33,7 @@ export function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className={cn("flex flex-col rounded-2xl border bg-card", className)}>
+    <section id={id} className={cn("flex flex-col rounded-2xl border bg-card", className)}>
       <div className="space-y-4 p-5">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1 space-y-1">

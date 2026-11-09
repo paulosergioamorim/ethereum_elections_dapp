@@ -8,4 +8,6 @@ export const electionKeys = {
   detail: (address: string) => [...electionKeys.all, "detail", address] as const,
   results: (address: string) => [...electionKeys.all, "results", address] as const,
   group: (address: string) => [...electionKeys.all, "group", address] as const,
+  ballots: (address: string) => [...electionKeys.all, "ballots", address] as const,
+  opened: (address: string) => [...electionKeys.all, "opened", address] as const,
 };

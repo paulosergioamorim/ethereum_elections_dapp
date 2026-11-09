@@ -18,6 +18,8 @@ const defaultReads: Record<string, unknown> = {
 // `vi.mocked(publicClient.<função>)` ou com `mockChain` (test/helpers/mock-chain.ts).
 vi.mock("@/lib/chain", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/chain")>()),
+  // como com WebSocket configurado: as páginas assinam os eventos (watchContractEvent abaixo)
+  liveEvents: true,
   publicClient: {
     getBlockNumber: vi.fn(async () => 7_000_000n),
     getBalance: vi.fn(async () => 10n ** 17n),
@@ -29,6 +31,8 @@ vi.mock("@/lib/chain", async (importOriginal) => ({
       return defaultReads[functionName];
     }),
     getContractEvents: vi.fn(async () => []),
+    // devolve o `unwatch`; os testes pegam o `onLogs` em `mock.calls` para simular um evento
+    watchContractEvent: vi.fn(() => () => {}),
     // a simulação devolve os próprios parâmetros como `request`, como o viem faz quando não há revert
     simulateContract: vi.fn(async (parameters: unknown) => ({ request: parameters })),
     waitForTransactionReceipt: vi.fn(async ({ hash }: { hash: string }) => ({

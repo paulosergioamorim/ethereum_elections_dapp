@@ -1,8 +1,8 @@
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Address } from "viem";
-import { describe, expect, it, vi } from "vitest";
-import { publicClient } from "@/lib/chain";
-import { mockChain } from "../helpers/mock-chain";
+import { describe, expect, it } from "vitest";
+import { mockChain, secondsFromNow } from "../helpers/mock-chain";
 import { alice, bob, connectReturningUser } from "../helpers/mock-wallet";
 import { renderRoute } from "../helpers/render";
 
@@ -17,20 +17,20 @@ describe("Elections", () => {
   });
 
   it("should list the factory elections, newest first, with links", async () => {
-    vi.mocked(publicClient.readContract).mockResolvedValueOnce([first, second] as never);
+    mockChain({ owner: bob, elections: [first, second] });
     renderRoute("/");
 
-    const links = await screen.findAllByRole("link", { name: /eleição #/i });
+    const links = await screen.findAllByRole("link", { name: /#\d/ });
 
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       `/elections/${second}`,
       `/elections/${first}`,
     ]);
-    expect(links[0]).toHaveTextContent("Eleição #2");
+    expect(links[0]).toHaveTextContent("#2");
   });
 
   it("should count the elections in the stat card", async () => {
-    vi.mocked(publicClient.readContract).mockResolvedValueOnce([first, second] as never);
+    mockChain({ owner: bob, elections: [first, second] });
     renderRoute("/");
 
     expect(await screen.findByText("2")).toBeInTheDocument();
@@ -44,5 +44,82 @@ describe("Elections", () => {
     const situation = screen.getByRole("group", { name: "Sua situação" });
 
     expect(await within(situation).findByText("Cadastrado")).toBeInTheDocument();
+  });
+
+  describe("busca", () => {
+    function twoElections() {
+      mockChain({
+        owner: bob,
+        elections: [first, second],
+        details: [
+          {
+            address: first,
+            title: "Representante da turma",
+            votingStart: secondsFromNow(-7_200),
+            votingEnd: secondsFromNow(-60),
+          },
+          {
+            address: second,
+            title: "Eleição do grêmio",
+            votingStart: secondsFromNow(-60),
+            votingEnd: secondsFromNow(3_600),
+          },
+        ],
+      });
+    }
+
+    async function electionLinks() {
+      return (await screen.findAllByRole("link", { name: /#\d/ })).map((link) =>
+        link.getAttribute("href"),
+      );
+    }
+
+    it("should show each election with its title and phase", async () => {
+      twoElections();
+      renderRoute("/");
+
+      const link = await screen.findByRole("link", { name: /Eleição do grêmio/ });
+      expect(within(link).getByText("Em votação")).toBeInTheDocument();
+      expect(
+        within(screen.getByRole("link", { name: /Representante da turma/ })).getByText("Em apuração"),
+      ).toBeInTheDocument();
+    });
+
+    it("should filter by title, ignoring case and accents", async () => {
+      twoElections();
+      const user = userEvent.setup();
+      renderRoute("/");
+      await screen.findByRole("link", { name: /Eleição do grêmio/ });
+
+      await user.type(screen.getByRole("searchbox", { name: "Buscar eleição" }), "GREMIO");
+
+      expect(await electionLinks()).toEqual([`/elections/${second}`]);
+    });
+
+    it("should filter by number and by address", async () => {
+      twoElections();
+      const user = userEvent.setup();
+      renderRoute("/");
+      const search = await screen.findByRole("searchbox", { name: "Buscar eleição" });
+      await screen.findByRole("link", { name: /Representante da turma/ });
+
+      await user.type(search, "#1");
+      expect(await electionLinks()).toEqual([`/elections/${first}`]);
+
+      await user.clear(search);
+      await user.type(search, second.slice(2, 10).toLowerCase());
+      expect(await electionLinks()).toEqual([`/elections/${second}`]);
+    });
+
+    it("should say when nothing matches", async () => {
+      twoElections();
+      const user = userEvent.setup();
+      renderRoute("/");
+      await screen.findByRole("link", { name: /Representante da turma/ });
+
+      await user.type(screen.getByRole("searchbox", { name: "Buscar eleição" }), "prefeito");
+
+      expect(await screen.findByText("Nenhuma eleição encontrada.")).toBeInTheDocument();
+    });
   });
 });
