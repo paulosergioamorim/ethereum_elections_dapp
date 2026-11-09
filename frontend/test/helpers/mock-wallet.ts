@@ -177,7 +177,7 @@ const testPrivateKeys: Record<string, Hex> = {
 };
 
 /** Conta local de uma das contas de teste, para calcular nos testes o que a carteira assinaria. */
-export function testAccount(address: Address) {
+function testAccount(address: Address) {
   const key = testPrivateKeys[address.toLowerCase()];
 
   if (!key) {

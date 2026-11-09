@@ -33,3 +33,4 @@ node_modules/
 
 # Implantações do Ignition em nó local (mudam a cada reinício do nó)
 /ignition/deployments/chain-31337
+.fallow/

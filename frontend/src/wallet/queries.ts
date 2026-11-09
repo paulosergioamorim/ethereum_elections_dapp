@@ -14,7 +14,7 @@ export const walletKeys = {
   chainId: (rdns: string) => ["wallet", rdns, "chainId"] as const,
 };
 
-export const chainKeys = {
+const chainKeys = {
   balance: (address: Address) => ["chain", appChain.id, "balance", address] as const,
 };
 

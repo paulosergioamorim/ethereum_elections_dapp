@@ -1,7 +1,7 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { appChain, publicClient } from "@/lib/chain";
 
-export const blockNumberQueryOptions = queryOptions({
+const blockNumberQueryOptions = queryOptions({
   queryKey: ["chain", appChain.id, "blockNumber"],
   queryFn: () => publicClient.getBlockNumber(),
   // a Sepolia produz um bloco a cada ~12 s

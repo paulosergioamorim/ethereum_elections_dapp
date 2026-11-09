@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /** Rótulo curto acima do título: ponto índigo e texto em caixa alta. */
-export function Eyebrow({ children }: { children: ReactNode }) {
+function Eyebrow({ children }: { children: ReactNode }) {
   return (
     <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-primary uppercase">
       <span aria-hidden className="size-1.5 rounded-full bg-primary" />
