@@ -1,8 +1,9 @@
 # Node modules
-/node_modules
+node_modules/
 
 # Compilation output
 /dist
+/frontend/dist
 
 # pnpm deploy output
 /bundle
@@ -29,3 +30,6 @@
 
 # Snapshot cheatcodes output
 /snapshots
+
+# Implantações do Ignition em nó local (mudam a cada reinício do nó)
+/ignition/deployments/chain-31337
