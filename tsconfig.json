@@ -7,5 +7,7 @@
     "outDir": "dist",
     "types": ["node"],
     "verbatimModuleSyntax": true
-  }
+  },
+  // o frontend tem o próprio tsconfig (DOM, JSX, bundler)
+  "exclude": ["frontend", "node_modules", "dist"]
 }

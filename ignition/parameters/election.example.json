@@ -1,0 +1,9 @@
+{
+  "ElectionModule": {
+    "factory": "0x0000000000000000000000000000000000000000",
+    "title": "Eleição para representante da turma",
+    "candidates": ["Candidato A", "Candidato B"],
+    "votingStart": 1767225600,
+    "votingEnd": 1767312000
+  }
+}

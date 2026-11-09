@@ -1,0 +1,17 @@
+{
+  "name": "@elections/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cripto do voto compartilhada entre os testes do Hardhat e o frontend: identidade, cédula, grupo e tlock",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@semaphore-protocol/group": "4.14.5",
+    "@semaphore-protocol/identity": "4.14.5",
+    "tlock-js": "0.9.0",
+    "viem": "2.57.16"
+  }
+}

@@ -1,0 +1,28 @@
+# SPA do frontend (Vite) na Netlify, construída a partir da raiz do workspace pnpm,
+# porque o frontend depende do pacote `shared/` (@elections/shared).
+
+[build]
+  command = "pnpm --filter frontend build"
+  publish = "frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # instala só o frontend e as dependências dele (inclui o shared), sem o Hardhat da raiz
+  PNPM_FLAGS = "--filter frontend..."
+  # Configuração pública do app (vai para o bundle). As URLs de RPC com chave
+  # (VITE_RPC_HTTP_URL, VITE_RPC_WS_URL) ficam no painel da Netlify, não aqui.
+  VITE_CHAIN_ID = "11155111"
+  VITE_FACTORY_ADDRESS = "0xd3116C4f166f8CDA5f90fAEEB03FE8E8D7eD139C"
+  VITE_FACTORY_DEPLOY_BLOCK = "12093709"
+
+# Rotas do React Router (modo data, sem SSR): qualquer caminho devolve o index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Arquivos com hash no nome podem ficar em cache para sempre
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

@@ -2,6 +2,13 @@
   "name": "ethereum_elections_dapp",
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "pnpm@12.17.0",
+  "scripts": {
+    "dev": "pnpm --filter frontend dev",
+    "build:frontend": "pnpm --filter frontend build",
+    "test:frontend": "pnpm --filter frontend test",
+    "export-abis": "hardhat run scripts/export-abis.ts"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "3.1.9",
     "@nomicfoundation/hardhat-toolbox-viem": "5.0.7",
