@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { deriveIdentity, identityMessage } from "../../shared/identity.js";
+import { deriveIdentity, identityMessage } from "../../../shared/identity.js";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 describe("shared/identity", () => {

@@ -8,7 +8,7 @@ import {
   randomSalt,
   roundForTimestamp,
   sealBallot,
-} from "../../shared/index.js";
+} from "../../../shared/index.js";
 import {
   createElection,
   deployFactory,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { Group } from "@semaphore-protocol/group";
-import { buildGroup, type MemberEvent } from "../../shared/group.js";
+import { buildGroup, type MemberEvent } from "../../../shared/group.js";
 
 describe("shared/group", () => {
   const commitments = [11n, 22n, 33n];

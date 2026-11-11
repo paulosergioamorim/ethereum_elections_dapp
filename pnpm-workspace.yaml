@@ -1,6 +1,5 @@
 packages:
-  - frontend
-  - shared
+  - packages/*
 
 allowBuilds:
   esbuild: true

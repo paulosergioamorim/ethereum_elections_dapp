@@ -7,7 +7,7 @@ import {
   encodeBallot,
   randomSalt,
   voteMessage,
-} from "../../shared/ballot.js";
+} from "../../../shared/ballot.js";
 
 describe("shared/ballot", () => {
   const ballot = { option: 1n, salt: randomSalt() };

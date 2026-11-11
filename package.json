@@ -1,30 +1,15 @@
 {
   "name": "ethereum_elections_dapp",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "packageManager": "pnpm@12.17.0",
   "scripts": {
-    "dev": "pnpm --filter frontend dev",
-    "build:frontend": "pnpm --filter frontend build",
-    "test:frontend": "pnpm --filter frontend test",
-    "export-abis": "hardhat run scripts/export-abis.ts"
-  },
-  "devDependencies": {
-    "@nomicfoundation/hardhat-ignition": "3.1.9",
-    "@nomicfoundation/hardhat-toolbox-viem": "5.0.7",
-    "@nomicfoundation/hardhat-viem": "3.1.0",
-    "@openzeppelin/contracts": "5.6.1",
-    "@semaphore-protocol/contracts": "4.14.5",
-    "@semaphore-protocol/group": "4.14.5",
-    "@semaphore-protocol/identity": "4.14.5",
-    "@semaphore-protocol/proof": "4.14.5",
-    "@types/node": "22.20.5",
-    "drand-client": "1.2.5",
-    "forge-std": "github:foundry-rs/forge-std#v1.17.0",
-    "hardhat": "3.21.2",
-    "poseidon-solidity": "0.0.5",
-    "tlock-js": "0.9.0",
-    "typescript": "6.0.3",
-    "viem": "2.57.16"
+    "dev": "pnpm --filter @elections/frontend dev",
+    "build:frontend": "pnpm --filter @elections/frontend build",
+    "test:frontend": "pnpm --filter @elections/frontend test",
+    "compile": "pnpm --filter @elections/contracts compile",
+    "test:contracts": "pnpm --filter @elections/contracts test",
+    "export-abis": "pnpm --filter @elections/contracts export-abis"
   }
 }

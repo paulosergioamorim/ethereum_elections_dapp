@@ -1,14 +1,14 @@
 # SPA do frontend (Vite) na Netlify, construída a partir da raiz do workspace pnpm,
-# porque o frontend depende do pacote `shared/` (@elections/shared).
+# porque o frontend depende do pacote `packages/shared/` (@elections/shared).
 
 [build]
-  command = "pnpm --filter frontend build"
-  publish = "frontend/dist"
+  command = "pnpm --filter @elections/frontend build"
+  publish = "packages/frontend/dist"
 
 [build.environment]
   NODE_VERSION = "22"
   # instala só o frontend e as dependências dele (inclui o shared), sem o Hardhat da raiz
-  PNPM_FLAGS = "--filter frontend..."
+  PNPM_FLAGS = "--filter @elections/frontend..."
   # Configuração pública do app (vai para o bundle). As URLs de RPC com chave
   # (VITE_RPC_HTTP_URL, VITE_RPC_WS_URL) ficam no painel da Netlify, não aqui.
   VITE_CHAIN_ID = "11155111"
