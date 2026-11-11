@@ -1,4 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
@@ -13,6 +14,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <WalletProvider>{children}</WalletProvider>
         <Toaster />
+        {/* só aparece em desenvolvimento: o build de produção troca por um componente vazio */}
+        <ReactQueryDevtools buttonPosition="bottom-left" />
       </QueryClientProvider>
     </ThemeProvider>
   );

@@ -7,8 +7,7 @@
   ],
   "workspaces": {
     "patterns": [
-      "frontend",
-      "shared"
+      "packages/*"
     ]
   },
   // Importadas pelos contratos .sol (e pelo hardhat.config.ts no caso do poseidon); o fallow não lê Solidity.
@@ -20,14 +19,14 @@
   ],
   // Componentes gerados pelo shadcn: exportam todas as partes, mesmo as que o app ainda não usa.
   "ignoreExports": [
-    { "file": "frontend/src/components/ui/**", "exports": ["*"] }
+    { "file": "packages/frontend/src/components/ui/**", "exports": ["*"] }
   ],
   "duplicates": {
     // Hide pair-only clones; focus on widespread copy-paste
     // worth refactoring. Lower to 2 to report every duplicate pair.
     "minOccurrences": 3,
     // Gerado por `pnpm export-abis`: as ABIs repetem os mesmos structs e erros.
-    "ignore": ["frontend/src/contracts/abis.ts"]
+    "ignore": ["packages/frontend/src/contracts/abis.ts"]
   },
   // Achados aceitos em 2026-11-09 (APIs index.ts, funções complexas): o gate do commit só barra os novos.
   // Depois de corrigir um, rode `fallow baselines prune` para tirá-lo da linha de base.

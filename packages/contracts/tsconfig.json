@@ -5,9 +5,10 @@
     "target": "es2023",
     "skipLibCheck": true,
     "outDir": "dist",
+    // os testes importam ../shared (por caminho relativo), que fica fora deste pacote
+    "rootDir": "..",
     "types": ["node"],
     "verbatimModuleSyntax": true
   },
-  // o frontend tem o próprio tsconfig (DOM, JSX, bundler)
-  "exclude": ["frontend", "node_modules", "dist"]
+  "exclude": ["node_modules", "dist"]
 }

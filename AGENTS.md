@@ -1,20 +1,25 @@
-# Hardhat + viem project
+# Ethereum elections dApp (pnpm monorepo)
 
-## Project layout
+## Packages
 
 ```
-contracts/        Solidity source files (*.sol) and unit tests (*.t.sol)
-test/             TypeScript integration tests and Solidity unit tests (*.sol)
-ignition/         Hardhat Ignition deployment modules
-scripts/          Standalone scripts run with `hardhat run`
-hardhat.config.ts
+packages/contracts/   @elections/contracts — Hardhat 3 + viem: Solidity contracts, tests, Ignition modules
+packages/frontend/    @elections/frontend — React + Vite SPA, deployed to Netlify (see netlify.toml)
+packages/shared/      @elections/shared — vote crypto shared by the Hardhat tests and the frontend
 ```
 
-## Working in this project
+Each package has its own `package.json` and `tsconfig.json`. The root only holds workspace,
+deploy (`netlify.toml`) and tooling (`.fallowrc.json`) config.
 
-When writing or modifying tests, configuring `hardhat.config.ts`, or interacting with the network from TypeScript, invoke the **`hardhat`** skill. It covers Solidity and TypeScript testing, how to choose between them, `forge-std` cheatcodes, the `network.create()` API, `networkHelpers`, and the compile-then-typecheck workflow. The skill itself points to the matching `hardhat-toolbox-*` skill for toolbox-specific guidance (clients, contract interaction, assertions).
+When working in `packages/contracts`, read `packages/contracts/AGENTS.md`.
 
-## Docs
+## Root scripts
 
-- Hardhat 3 — https://hardhat.org/llms.txt
-- viem — https://viem.sh/llms.txt
+```
+pnpm dev               frontend dev server
+pnpm build:frontend    typecheck + production build of the frontend
+pnpm test:frontend     frontend tests (vitest)
+pnpm compile           compile the contracts
+pnpm test:contracts    Solidity + TypeScript integration tests
+pnpm export-abis       copy compiled ABIs to packages/frontend/src/contracts/abis.ts
+```

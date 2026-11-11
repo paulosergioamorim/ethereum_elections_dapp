@@ -10,7 +10,9 @@ const contracts = [
   { name: "semaphoreAbi", artifact: "artifacts/@semaphore-protocol/contracts/Semaphore.sol/Semaphore.json" },
 ];
 
-const output = "frontend/src/contracts/abis.ts";
+// caminhos a partir deste arquivo, não do diretório de onde o comando foi chamado
+const packageRoot = path.resolve(import.meta.dirname, "..");
+const output = path.resolve(packageRoot, "../frontend/src/contracts/abis.ts");
 
 const parts = [
   "// Gerado por scripts/export-abis.ts a partir de artifacts/. Não edite à mão: rode `pnpm export-abis`.",
@@ -18,11 +20,11 @@ const parts = [
 ];
 
 for (const { name, artifact } of contracts) {
-  const { abi } = JSON.parse(await readFile(artifact, "utf8"));
+  const { abi } = JSON.parse(await readFile(path.resolve(packageRoot, artifact), "utf8"));
   parts.push(`export const ${name} = ${JSON.stringify(abi, null, 2)} as const;`, "");
 }
 
 await mkdir(path.dirname(output), { recursive: true });
 await writeFile(output, parts.join("\n"));
 
-console.log(`ABIs exportadas para ${output}`);
+console.log(`ABIs exportadas para ${path.relative(process.cwd(), output)}`);

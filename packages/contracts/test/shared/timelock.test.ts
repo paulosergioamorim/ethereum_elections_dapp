@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { randomSalt } from "../../shared/ballot.js";
+import { randomSalt } from "../../../shared/ballot.js";
 import {
   openBallot,
   quicknetClient,
   roundForTimestamp,
   sealBallot,
-} from "../../shared/timelock.js";
+} from "../../../shared/timelock.js";
 
 describe("shared/timelock (drand quicknet real)", async () => {
   const client = quicknetClient();

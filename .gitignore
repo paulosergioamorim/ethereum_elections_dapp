@@ -3,19 +3,19 @@ node_modules/
 
 # Compilation output
 /dist
-/frontend/dist
+/packages/frontend/dist
 
 # pnpm deploy output
 /bundle
 
 # Hardhat Build Artifacts
-/artifacts
+/packages/contracts/artifacts
 
 # Hardhat compilation (v2) support directory
-/cache
+/packages/contracts/cache
 
 # Typechain output
-/types
+/packages/contracts/types
 
 # Environment files
 .env
@@ -23,14 +23,14 @@ node_modules/
 !.env.example
 
 # Hardhat coverage reports
-/coverage
+/packages/contracts/coverage
 
 # Gas snapshot files
-/.gas-snapshot
+/packages/contracts/.gas-snapshot
 
 # Snapshot cheatcodes output
-/snapshots
+/packages/contracts/snapshots
 
 # Implantações do Ignition em nó local (mudam a cada reinício do nó)
-/ignition/deployments/chain-31337
+/packages/contracts/ignition/deployments/chain-31337
 .fallow/

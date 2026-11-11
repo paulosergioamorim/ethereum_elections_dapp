@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
 import { network } from "hardhat";
 import { stringToHex } from "viem";
-import { commitBallot, randomSalt, voteMessage } from "../../shared/index.js";
+import { commitBallot, randomSalt, voteMessage } from "../../../shared/index.js";
 import {
   createElection,
   currentGroup,

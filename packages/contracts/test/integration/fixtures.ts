@@ -16,7 +16,7 @@ import {
   voteMessage,
   type Ballot,
   type MemberEvent,
-} from "../../shared/index.js";
+} from "../../../shared/index.js";
 
 export type Semaphore = ContractReturnType<"Semaphore">;
 export type ElectionFactory = ContractReturnType<"ElectionFactory">;
