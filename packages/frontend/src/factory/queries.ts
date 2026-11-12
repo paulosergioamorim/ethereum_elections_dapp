@@ -19,7 +19,7 @@ export type FactoryInfo = {
   /** A autoridade eleitoral. */
   owner: Address;
   semaphore: Address;
-  /** Grupo Semaphore global, com todos os eleitores cadastrados. */
+  /** Grupo Semaphore global, com todos os eleitores registrados. */
   groupId: bigint;
 };
 
@@ -41,12 +41,12 @@ export const factoryInfoQueryOptions = queryOptions({
 
 export type Voter = {
   address: Address;
-  /** Identidade cadastrada; 0 enquanto o eleitor não se cadastrar. */
+  /** Identidade registrada; 0 enquanto o eleitor não se registrar. */
   commitment: bigint;
 };
 
 /**
- * Carteiras autorizadas hoje, com a identidade cadastrada.
+ * Carteiras autorizadas hoje, com a identidade registrada.
  * Os eventos `VoterAuthorized` só servem para descobrir os endereços; o estado atual vem do contrato,
  * então quem foi removido depois não aparece.
  */
@@ -105,7 +105,7 @@ export const votersQueryOptions = queryOptions({
 
 export type VoterStatus = {
   isAuthorized: boolean;
-  /** Identidade cadastrada; 0 enquanto a conta não se cadastrar. */
+  /** Identidade registrada; 0 enquanto a conta não se registrar. */
   commitment: bigint;
 };
 
@@ -125,7 +125,7 @@ async function fetchVoterStatus(address: Address): Promise<VoterStatus> {
   return { isAuthorized, commitment };
 }
 
-/** Situação de uma conta na factory: autorizada pela autoridade e identidade cadastrada. */
+/** Situação de uma conta na factory: autorizada pela autoridade e identidade registrada. */
 export function voterStatusQueryOptions(address: Address | undefined) {
   return queryOptions({
     queryKey: factoryKeys.voter(address ?? zeroAddress),

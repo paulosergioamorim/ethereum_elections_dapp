@@ -8,9 +8,9 @@ export type MockVoter = {
   address: Address;
   /** Padrão: autorizado. `false` simula um eleitor removido depois de autorizado. */
   authorized?: boolean;
-  /** Identidade cadastrada; sem ela, o eleitor ainda não se cadastrou. */
+  /** Identidade registrada; sem ela, o eleitor ainda não se registrou. */
   commitment?: bigint;
-  /** Bloco do cadastro (evento `MemberAdded`). Padrão: 2. */
+  /** Bloco do registro (evento `MemberAdded`). Padrão: 2. */
   registeredAtBlock?: bigint;
 };
 
@@ -30,7 +30,7 @@ export type MockElection = {
   /** Timestamps Unix em segundos. */
   votingStart: bigint;
   votingEnd: bigint;
-  /** Bloco da criação: a árvore da eleição tem só quem se cadastrou até ele. Padrão: 10. */
+  /** Bloco da criação: a árvore da eleição tem só quem se registrou até ele. Padrão: 10. */
   createdAtBlock?: bigint;
   tally?: bigint[];
   nullVotes?: bigint;
@@ -54,7 +54,7 @@ export function secondsFromNow(seconds: number): bigint {
 
 /**
  * Estado on-chain simulado: factory com dono, eleitores e eleições, o grupo do Semaphore (com os
- * cadastros na ordem dos blocos) e, opcionalmente, uma eleição com a árvore congelada na criação.
+ * registros na ordem dos blocos) e, opcionalmente, uma eleição com a árvore congelada na criação.
  * Devolve o grupo atual, para os testes calcularem siblings.
  */
 export function mockChain({
@@ -71,7 +71,7 @@ export function mockChain({
   /** Outras eleições com dados próprios (título, prazos), lidas pelo endereço. */
   details?: MockElection[];
 }) {
-  // cadastros em ordem de bloco (e de lista, no mesmo bloco); o índice na árvore segue essa ordem
+  // registros em ordem de bloco (e de lista, no mesmo bloco); o índice na árvore segue essa ordem
   const members = voters
     .flatMap((voter, order) =>
       voter.commitment ? [{ commitment: voter.commitment, block: voter.registeredAtBlock ?? 2n, order }] : [],
@@ -207,6 +207,8 @@ export function mockChain({
   ];
 
   // como um RPC de verdade: só os eventos do tipo e da faixa de blocos pedidos
+  let groupLogsFail = false;
+
   vi.mocked(publicClient.getContractEvents).mockImplementation((async ({
     eventName,
     fromBlock,
@@ -215,15 +217,27 @@ export function mockChain({
     eventName: string;
     fromBlock: bigint;
     toBlock: bigint;
-  }) =>
-    events.filter(
+  }) => {
+    // o RPC público que perde o histórico ao acaso: "pruned history unavailable"
+    if (groupLogsFail && (eventName === "MemberAdded" || eventName === "MemberRemoved")) {
+      throw new Error("pruned history unavailable");
+    }
+
+    return events.filter(
       (event) =>
         event.eventName === eventName &&
         event.blockNumber >= fromBlock &&
         event.blockNumber <= toBlock,
-    )) as never);
+    );
+  }) as never);
 
-  return { group };
+  return {
+    group,
+    /** Liga e desliga a falha da leitura dos eventos do grupo (a árvore de eleitores). */
+    failGroupLogs(fail: boolean) {
+      groupLogsFail = fail;
+    },
+  };
 }
 
 /** Recibo de `createElection` com o evento `ElectionCreated` da nova eleição. */

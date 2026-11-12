@@ -3,15 +3,15 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 const bannerVariants = cva(
-  "flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border px-4 py-3 text-sm",
+  "flex flex-wrap items-center gap-x-4 gap-y-3 rounded-r border-l-4 px-4 py-3 text-sm",
   {
     variants: {
       variant: {
-        info: "border-primary/15 bg-primary/5 text-foreground",
+        info: "border-primary bg-secondary text-foreground",
         warning:
-          "border-amber-300/70 bg-amber-50 text-amber-950 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-100",
+          "border-amber-500 bg-amber-50 text-amber-950 dark:border-amber-400 dark:bg-amber-400/10 dark:text-amber-100",
         danger:
-          "border-rose-300/70 bg-rose-50 text-rose-900 dark:border-rose-400/25 dark:bg-rose-400/10 dark:text-rose-100",
+          "border-rose-500 bg-rose-50 text-rose-900 dark:border-rose-400 dark:bg-rose-400/10 dark:text-rose-100",
       },
     },
     defaultVariants: { variant: "info" },

@@ -13,7 +13,7 @@ function plural(count: number, singular: string, pluralForm: string) {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-/** Passo 1 da autoridade: liberar as carteiras que poderão se cadastrar como eleitoras. */
+/** Passo 1 da autoridade: liberar as carteiras que poderão se registrar como eleitoras. */
 export function AuthorizeVotersCard({ authorized }: { authorized: readonly Address[] | undefined }) {
   const { canAdminister, reason } = useAuthority();
   const { accounts } = useWallet();
@@ -43,7 +43,7 @@ export function AuthorizeVotersCard({ authorized }: { authorized: readonly Addre
       layout="stacked"
       icon={UserPlusIcon}
       title="Autorizar carteiras"
-      description="Carteiras autorizadas podem se cadastrar como eleitoras."
+      description="Carteiras autorizadas podem se registrar como eleitoras."
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -90,7 +90,7 @@ export function AuthorizeVotersCard({ authorized }: { authorized: readonly Addre
 
         <Button
           type="submit"
-          className="h-10 w-full"
+          className="h-11 w-full text-base"
           disabled={!canAdminister || parsed.toAuthorize.length === 0 || authorize.isPending}
         >
           {authorize.isPending && <Loader2Icon className="animate-spin" />}

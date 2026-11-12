@@ -4,7 +4,7 @@ pragma solidity ^0.8.34;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Election} from "../contracts/Election.sol";
 import {ElectionFactory} from "../contracts/ElectionFactory.sol";
-import {CreateElectionCommand} from "../contracts/Types.sol";
+import {CreateElectionCommand, IElectionSemaphore} from "../contracts/Types.sol";
 import {ElectionFactoryTestBase} from "./ElectionFactoryTestBase.sol";
 import {ElectionTestLib} from "./ElectionTestLib.sol";
 
@@ -33,6 +33,34 @@ contract ElectionFactoryCreateElectionTest is ElectionFactoryTestBase {
     ) public registeredVoter(voter, identityCommitment) {
         Election election = factory.createElection(ElectionTestLib.validCommand());
         assertTrue(factory.isElection(address(election)));
+    }
+
+    function test_shouldKeepVerifyingTheElectionRootAfterNewRegistrations(
+        address voter,
+        uint256 identityCommitment,
+        address laterVoter,
+        uint256 laterCommitment
+    ) public registeredVoter(voter, identityCommitment) {
+        vm.assume(laterVoter != voter && laterVoter != address(0));
+        vm.assume(laterCommitment != 0 && laterCommitment != identityCommitment);
+
+        Election election = factory.createElection(ElectionTestLib.validCommand());
+        uint256 frozenRoot = election.merkleTreeRoot();
+
+        // alguém se registra depois: a raiz atual do grupo deixa de ser a da eleição
+        address[] memory later = new address[](1);
+        later[0] = laterVoter;
+        factory.addAuthorizedVoters(later);
+        vm.prank(laterVoter);
+        factory.registerIdentityCommitment(laterCommitment);
+        assertNotEq(sem.getMerkleTreeRoot(factory.groupId()), frozenRoot);
+
+        // muito tempo depois, a raiz congelada continua aceita
+        vm.warp(block.timestamp + 365 days * 100);
+        IElectionSemaphore.SemaphoreProof memory proof;
+        proof.merkleTreeDepth = 1;
+        proof.merkleTreeRoot = frozenRoot;
+        assertTrue(sem.verifyProof(factory.groupId(), proof));
     }
 
     function test_shouldStoreElections(

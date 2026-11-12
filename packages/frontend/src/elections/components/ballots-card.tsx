@@ -50,7 +50,7 @@ export function BallotsCard({ election }: { election: ElectionDetails }) {
 
   if (!ballots.data) {
     body = (
-      <p className="py-10 text-center text-sm text-muted-foreground">
+      <p className="py-6 text-sm text-muted-foreground">
         {ballots.isError ? "Não foi possível ler as cédulas." : "Lendo as cédulas…"}
       </p>
     );
@@ -64,14 +64,14 @@ export function BallotsCard({ election }: { election: ElectionDetails }) {
     );
   } else {
     body = (
-      <ul className="max-h-96 divide-y overflow-y-auto" aria-label="Cédulas">
+      <ul className="-mt-4 max-h-96 divide-y overflow-y-auto" aria-label="Cédulas">
         {ballots.data.map((ballot) => (
           <li
             key={ballot.index.toString()}
-            className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"
+            className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
           >
             <span className="flex min-w-0 items-center gap-3">
-              <span className="font-medium tabular-nums">nº {(ballot.index + 1n).toString()}</span>
+              <span className="w-12 font-numeral text-lg leading-none">nº {(ballot.index + 1n).toString()}</span>
               <span className="truncate font-mono text-xs text-muted-foreground" title={ballot.commitment}>
                 {ballot.commitment.slice(0, 10)}…{ballot.commitment.slice(-8)}
               </span>

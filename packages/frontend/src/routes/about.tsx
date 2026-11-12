@@ -1,7 +1,7 @@
 import {
   DeploymentCard,
   LimitationsCard,
-  SectionHeading,
+  SupportingTools,
   technologies,
   TechnologyCard,
   VoteJourney,
@@ -12,37 +12,21 @@ export function About() {
   return (
     <div className="space-y-12">
       <PageHeader
-        eyebrow="Sobre"
         title="As tecnologias por trás do voto"
-        description={
-          <div className="space-y-2">
-            <p>
-              Um dApp acadêmico de eleição, inspirado no sistema eleitoral brasileiro e sem vínculo
-              com nenhum órgão eleitoral. Os contratos rodam na Sepolia, a rede de testes do
-              Ethereum, e o navegador fala direto com a blockchain.
-            </p>
-            <p>Esta página explica cada peça e aponta a documentação oficial de cada uma.</p>
-          </div>
-        }
+        description="Um dApp acadêmico de eleição, inspirado no sistema eleitoral brasileiro e sem vínculo com nenhum órgão eleitoral. Duas tecnologias sustentam o projeto: o Ethereum guarda as regras e a contagem, e o Semaphore mantém o voto anônimo."
       />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {technologies.map((technology) => (
+          <TechnologyCard key={technology.id} technology={technology} />
+        ))}
+      </div>
 
       <VoteJourney />
 
-      <section aria-labelledby="technologies-title" className="space-y-4">
-        <SectionHeading
-          id="technologies-title"
-          title="Peça por peça"
-          description="O que cada tecnologia faz neste projeto e onde ler mais sobre ela."
-        />
+      <SupportingTools />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {technologies.map((technology) => (
-            <TechnologyCard key={technology.id} technology={technology} />
-          ))}
-        </div>
-      </section>
-
-      <div className="grid items-start gap-6 lg:grid-cols-[24rem_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-x-12 gap-y-10 lg:grid-cols-2">
         <DeploymentCard />
         <LimitationsCard />
       </div>

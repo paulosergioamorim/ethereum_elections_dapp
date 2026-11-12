@@ -43,7 +43,7 @@ describe("Elections", () => {
 
     const situation = screen.getByRole("group", { name: "Sua situação" });
 
-    expect(await within(situation).findByText("Cadastrado")).toBeInTheDocument();
+    expect(await within(situation).findByText("Registrado")).toBeInTheDocument();
   });
 
   describe("busca", () => {

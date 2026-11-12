@@ -24,7 +24,7 @@ export function useVoters() {
   return useQuery(votersQueryOptions);
 }
 
-/** Situação da conta na factory (autorizada? cadastrada?). Sem conta, não consulta. */
+/** Situação da conta na factory (autorizada? registrada?). Sem conta, não consulta. */
 export function useVoterStatus(address: Address | undefined) {
   return useQuery(voterStatusQueryOptions(address));
 }
@@ -59,7 +59,7 @@ export function useAuthority(): {
   return { owner, isAuthority, canAdminister: reason === undefined, reason };
 }
 
-/** `addAuthorizedVoters`: libera as carteiras para se cadastrarem. */
+/** `addAuthorizedVoters`: libera as carteiras para se registrarem. */
 export function useAuthorizeVoters() {
   const { walletClient } = useWallet();
   const queryClient = useQueryClient();
@@ -95,7 +95,7 @@ export function useAuthorizeVoters() {
 }
 
 /**
- * `removeVoter`: tira a autorização e, se o eleitor já tiver se cadastrado, a identidade dele do grupo.
+ * `removeVoter`: tira a autorização e, se o eleitor já tiver se registrado, a identidade dele do grupo.
  * Os siblings saem da árvore remontada na hora, a partir dos eventos do Semaphore.
  */
 export function useRemoveVoter() {
@@ -152,7 +152,7 @@ export type CreateElectionInput = {
   votingEnd: bigint;
 };
 
-/** `createElection`: cria a eleição com os eleitores cadastrados até agora. Devolve o endereço dela. */
+/** `createElection`: cria a eleição com os eleitores registrados até agora. Devolve o endereço dela. */
 export function useCreateElection() {
   const { walletClient } = useWallet();
   const queryClient = useQueryClient();
@@ -191,7 +191,7 @@ export function useCreateElection() {
   });
 }
 
-/** Etapa do cadastro em andamento, para o botão dizer o que a carteira está pedindo. */
+/** Etapa do registro em andamento, para o botão dizer o que a carteira está pedindo. */
 export type RegisterStep = "signing" | "sending" | "confirming";
 
 /**
@@ -204,7 +204,7 @@ export function useRegisterIdentity() {
   const [step, setStep] = useState<RegisterStep>();
 
   const mutation = useMutation({
-    meta: { errorTitle: "Não foi possível fazer o cadastro" },
+    meta: { errorTitle: "Não foi possível fazer o registro" },
     mutationFn: async () => {
       const client = requireWalletClient(walletClient);
       const account = client.account.address;
@@ -213,7 +213,7 @@ export function useRegisterIdentity() {
       const status = await queryClient.query(voterStatusQueryOptions(account));
 
       if (status.commitment !== 0n) {
-        throw new Error("Esta conta já está cadastrada.");
+        throw new Error("Esta conta já está registrada.");
       }
 
       if (!status.isAuthorized) {
@@ -224,9 +224,9 @@ export function useRegisterIdentity() {
 
       await runTransaction(
         {
-          signing: "Assine a mensagem e confirme o cadastro na carteira.",
+          signing: "Assine a mensagem e confirme o registro na carteira.",
           details: `Conta: ${account}`,
-          success: "Identidade cadastrada.",
+          success: "Identidade registrada.",
         },
         async () => {
           setStep("signing");

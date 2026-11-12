@@ -1,4 +1,3 @@
-import { VoteIcon } from "lucide-react";
 import { factoryAddress } from "@/contracts";
 import { appChain, explorerAddressUrl } from "@/lib/chain";
 import { shortAddress } from "@/lib/format";
@@ -17,39 +16,34 @@ export function AppFooter() {
   const factoryUrl = explorerAddressUrl(factoryAddress);
 
   return (
-    <footer className="border-t">
-      <div className="mx-auto grid max-w-6xl gap-3 px-6 py-6 text-xs text-muted-foreground sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-        <p className="flex items-center gap-2">
-          <VoteIcon className="size-4" />
-          Eleições · Voto em segredo, apuração à vista.
-        </p>
+    <footer className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t py-6 text-xs text-muted-foreground">
+      <p className="mr-auto">Voto em segredo, apuração à vista.</p>
 
-        <p className="sm:text-center">
-          Transações verificáveis na blockchain · Rede {appChain.name} · Contrato{" "}
-          {factoryUrl ? (
-            <a
-              href={factoryUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="font-mono underline-offset-4 hover:text-foreground hover:underline"
-            >
-              {shortAddress(factoryAddress)}
-            </a>
-          ) : (
-            <span className="font-mono">{shortAddress(factoryAddress)}</span>
-          )}
-        </p>
+      <p>
+        Rede {appChain.name}, contrato{" "}
+        {factoryUrl ? (
+          <a
+            href={factoryUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-mono underline underline-offset-4 hover:text-foreground"
+          >
+            {shortAddress(factoryAddress)}
+          </a>
+        ) : (
+          <span className="font-mono">{shortAddress(factoryAddress)}</span>
+        )}
+      </p>
 
-        <a
-          href={REPOSITORY_URL}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Código no GitHub"
-          className="transition-colors hover:text-foreground sm:justify-self-end"
-        >
-          <GitHubMark className="size-5" />
-        </a>
-      </div>
+      <a
+        href={REPOSITORY_URL}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Código no GitHub"
+        className="transition-colors hover:text-foreground"
+      >
+        <GitHubMark className="size-5" />
+      </a>
     </footer>
   );
 }

@@ -16,7 +16,7 @@ export function ExternalDocLink({ link }: { link: DocLink }) {
         target="_blank"
         rel="noreferrer"
         hrefLang={link.lang}
-        className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+        className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4"
       >
         {link.label}
         <ArrowUpRightIcon aria-hidden className="size-3.5 shrink-0" />
@@ -34,7 +34,7 @@ export function ExternalDocLink({ link }: { link: DocLink }) {
 export function DocLinks({ links, className }: { links: DocLink[]; className?: string }) {
   return (
     <div className={cn("space-y-2.5", className)}>
-      <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
         <BookOpenIcon aria-hidden className="size-3.5" />
         Documentação
       </p>

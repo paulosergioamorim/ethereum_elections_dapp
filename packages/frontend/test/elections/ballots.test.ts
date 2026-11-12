@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   chunk,
+  electedCandidate,
   pendingReveals,
   provisionalTally,
   type CastBallot,
@@ -56,5 +57,22 @@ describe("chunk", () => {
   it("should split into batches of at most the given size", () => {
     expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
     expect(chunk([], 2)).toEqual([]);
+  });
+});
+
+describe("electedCandidate", () => {
+  it("should elect the candidate with the most votes once every ballot is open", () => {
+    expect(electedCandidate([1n, 3n, 2n], 0n)).toBe(1);
+  });
+
+  it("should not elect anyone on a tie or without votes", () => {
+    expect(electedCandidate([2n, 2n], 0n)).toBeUndefined();
+    expect(electedCandidate([0n, 0n], 0n)).toBeUndefined();
+  });
+
+  it("should wait while the sealed ballots could still change the winner", () => {
+    expect(electedCandidate([3n, 1n], 2n)).toBeUndefined();
+    // três de vantagem contra duas cédulas fechadas: já está decidido
+    expect(electedCandidate([4n, 1n], 2n)).toBe(0);
   });
 });

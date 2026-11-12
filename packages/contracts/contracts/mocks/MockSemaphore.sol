@@ -12,7 +12,8 @@ import {IElectionSemaphore} from "../Types.sol";
 /// - não verifica a prova ZK: aceita qualquer `points`, a menos que `setAcceptProofs(false)`
 /// - a "raiz" é um hash encadeado das operações, não uma Merkle tree Poseidon
 /// - os siblings de `removeMember` são ignorados
-/// - raízes antigas nunca expiram (equivale a `merkleTreeDuration` infinito)
+/// - raízes antigas expiram como no Semaphore v4 implantado na Sepolia: `block.timestamp >
+///   criaçãoDaRaiz + merkleTreeDuration`, com a soma checada. Com `type(uint256).max`, estoura (Panic)
 /// - funções que os contratos não usam revertem com `NotImplementedInMock`
 contract MockSemaphore is IElectionSemaphore {
     struct MockGroup {
@@ -22,6 +23,7 @@ contract MockSemaphore is IElectionSemaphore {
         uint256 size;
         mapping(uint256 identityCommitment => uint256 indexPlusOne) indexOf;
         mapping(uint256 merkleTreeRoot => bool) knownRoots;
+        mapping(uint256 merkleTreeRoot => uint256 timestamp) rootCreatedAt;
         mapping(uint256 nullifier => bool) usedNullifiers;
     }
 
@@ -196,6 +198,15 @@ contract MockSemaphore is IElectionSemaphore {
             revert Semaphore__MerkleTreeRootIsNotPartOfTheGroup();
         }
 
+        // raiz que já foi substituída: vale por `merkleTreeDuration` a partir da criação dela
+        if (
+            proof.merkleTreeRoot != group.merkleTreeRoot &&
+            block.timestamp >
+            group.rootCreatedAt[proof.merkleTreeRoot] + group.merkleTreeDuration
+        ) {
+            revert Semaphore__MerkleTreeRootIsExpired();
+        }
+
         // no real, aqui o Verifier confere a prova Groth16
         return acceptProofs;
     }
@@ -272,5 +283,6 @@ contract MockSemaphore is IElectionSemaphore {
 
         group.merkleTreeRoot = root;
         group.knownRoots[root] = true;
+        group.rootCreatedAt[root] = block.timestamp;
     }
 }

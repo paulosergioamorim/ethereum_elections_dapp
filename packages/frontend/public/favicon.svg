@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- marca do cabeçalho: círculo verde (cor primary do tema, #2c6d3e) com o ícone "vote" do lucide,
-       maior e com traço mais grosso que no cabeçalho, para continuar legível em 16 px -->
-  <circle cx="32" cy="32" r="32" fill="#2c6d3e"/>
-  <g transform="translate(8 8) scale(2)" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-    <path d="m9 12 2 2 4-4"/>
-    <path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/>
-    <path d="M22 19H2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- marca do app (a mesma de src/components/layout/brand.tsx): a urna com o voto conferido,
+       em cantos vivos e traço grosso, sobre o verde primary do tema (#2c6d3e) -->
+  <rect width="24" height="24" fill="#2c6d3e"/>
+  <g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M6.5 17.5v-11h11v11"/>
+    <path d="M4 17.5h16"/>
+    <path d="m9.5 11.5 2 2 3.5-3.5"/>
   </g>
 </svg>

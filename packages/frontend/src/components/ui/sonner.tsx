@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react"
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import {
@@ -10,8 +9,9 @@ import {
 } from "lucide-react"
 
 /**
- * Host único dos toasts, montado em AppProviders. Mesmo desenho do Turing dApp: cores ricas,
- * botão de fechar e as variáveis do tema shadcn. O tema segue o do sistema (claro ou escuro).
+ * Host único dos toasts, montado em AppProviders. O desenho é o de um comprovante: folha branca com a
+ * borda fina das outras folhas, e a situação num bloco de cor à esquerda (regras em `index.css`,
+ * seção "Toasts"). O tema segue o do sistema (claro ou escuro).
  */
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
@@ -20,28 +20,20 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       position="bottom-right"
-      richColors
       closeButton
+      gap={12}
+      // no celular, acima da navegação fixa no pé da tela
+      mobileOffset={{ bottom: 80 }}
       className="toaster group"
       icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <LoaderCircleIcon className="size-4 animate-spin" />,
+        success: <CircleCheckIcon className="size-5" />,
+        info: <InfoIcon className="size-5" />,
+        warning: <TriangleAlertIcon className="size-5" />,
+        error: <OctagonXIcon className="size-5" />,
+        loading: <LoaderCircleIcon className="size-5 animate-spin" />,
       }}
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
-        } as CSSProperties
-      }
-      toastOptions={{
-        // o hash da transação quebra em qualquer ponto, sem estourar a largura do toast
-        classNames: { toast: "font-sans", description: "break-all" },
-      }}
+      // sem o estilo padrão do sonner: o desenho inteiro vem do `index.css`
+      toastOptions={{ unstyled: true }}
       {...props}
     />
   )

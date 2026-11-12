@@ -1,6 +1,10 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
+import { logRetry } from "@/lib/logs";
+
+// sem espera entre as tentativas de leitura de eventos: os testes não esperam por relógio
+logRetry.delayMs = 0;
 
 /** Respostas padrão das leituras de contrato: factory vazia, com um dono qualquer. */
 const defaultReads: Record<string, unknown> = {

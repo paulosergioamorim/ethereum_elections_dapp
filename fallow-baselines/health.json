@@ -1,0 +1,40 @@
+{
+  "kind": "health",
+  "finding_counts": {
+    "packages/frontend/src/elections/components/reveal-panel.tsx": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "packages/frontend/src/elections/components/vote-card.tsx": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
+    "packages/frontend/src/wallet/wallet-provider.tsx": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "packages/frontend/test/helpers/mock-chain.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "packages/frontend/test/helpers/mock-wallet.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    }
+  },
+  "runtime_coverage_findings": [],
+  "target_keys": [
+    "packages/frontend/test/helpers/mock-chain.ts:high impact",
+    "packages/frontend/src/elections/keys.ts:high impact",
+    "packages/frontend/src/lib/errors.ts:high impact",
+    "packages/frontend/src/lib/use-now.ts:high impact"
+  ]
+}

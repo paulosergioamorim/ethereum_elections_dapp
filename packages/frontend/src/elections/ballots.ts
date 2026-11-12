@@ -107,3 +107,24 @@ export function chunk<T>(items: readonly T[], size: number): T[][] {
 
   return batches;
 }
+
+/**
+ * Índice do candidato eleito, ou `undefined` enquanto não há um. Vale assim que a vantagem do
+ * primeiro sobre o segundo é maior que o número de cédulas ainda fechadas: nem todas precisam
+ * estar abertas (uma cédula inválida nunca abre). Votos nulos não elegem ninguém, e empate não tem eleito.
+ */
+export function electedCandidate(tally: readonly bigint[], unrevealed: bigint): number | undefined {
+  let first: number | undefined;
+  let second = 0n;
+
+  tally.forEach((votes, index) => {
+    if (first === undefined || votes > tally[first]) {
+      second = first === undefined ? 0n : tally[first];
+      first = index;
+    } else if (votes > second) {
+      second = votes;
+    }
+  });
+
+  return first !== undefined && tally[first] - second > unrevealed ? first : undefined;
+}

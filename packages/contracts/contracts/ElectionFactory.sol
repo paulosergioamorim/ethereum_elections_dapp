@@ -7,6 +7,9 @@ import {Election} from "./Election.sol";
 import {CreateElectionCommand, IElectionSemaphore} from "./Types.sol";
 
 contract ElectionFactory is Ownable {
+    // Tempo consideravelmente grande sem overflow em aritmética com a duração da MTree
+    uint256 private constant MERKLE_TREE_DURATION = type(uint64).max;
+
     address private immutable _base = address(new Election());
     Election[] private _elections;
 
@@ -20,8 +23,8 @@ contract ElectionFactory is Ownable {
 
     constructor(IElectionSemaphore _sem) Ownable(msg.sender) {
         sem = _sem;
-        // set contract as the admin group and merkle tree duration to max
-        groupId = sem.createGroup(address(this), type(uint256).max);
+        // a factory é a admin do grupo, e as raízes antigas nunca expiram
+        groupId = sem.createGroup(address(this), MERKLE_TREE_DURATION);
     }
 
     IElectionSemaphore public immutable sem;

@@ -10,8 +10,8 @@ export function RouteError() {
     : errorMessage(error);
 
   return (
-    <div className="mx-auto max-w-xl space-y-4 px-4 py-16 text-center">
-      <h1 className="text-2xl font-semibold">Algo deu errado</h1>
+    <div className="mx-auto max-w-xl space-y-4 px-5 py-16">
+      <h1 className="font-display text-4xl">Algo deu errado</h1>
       <p className="text-sm break-words text-muted-foreground">{message}</p>
       <Button asChild variant="outline">
         <Link to="/">Voltar para o início</Link>
