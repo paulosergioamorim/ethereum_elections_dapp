@@ -47,7 +47,7 @@ abstract contract ElectionTestBase is Test {
 
     function setUp() public {
         sem = new MockSemaphore();
-        groupId = sem.createGroup(address(this), type(uint256).max);
+        groupId = sem.createGroup(address(this), type(uint64).max);
         sem.addMember(groupId, 1);
         merkleTreeRoot = sem.getMerkleTreeRoot(groupId);
         election = Election(Clones.clone(address(new Election())));
