@@ -49,6 +49,6 @@ describe("errorMessage", () => {
       cause: factoryRevert(encodeErrorResult({ abi: electionAbi, errorName: "InvalidMerkleRoot" })),
     });
 
-    expect(errorMessage(wrapped)).toMatch(/Ainda não há eleitores cadastrados/);
+    expect(errorMessage(wrapped)).toMatch(/Ainda não há eleitores registrados/);
   });
 });

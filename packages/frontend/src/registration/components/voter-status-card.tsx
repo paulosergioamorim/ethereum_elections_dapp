@@ -21,14 +21,14 @@ import { AddressAvatar, useWallet } from "@/wallet";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+    <div className="flex items-center justify-between gap-4 py-3.5">
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="flex items-center gap-2 text-sm">{children}</dd>
     </div>
   );
 }
 
-const positive = "bg-primary/10 text-primary";
+const positive = "border-primary bg-transparent text-primary";
 
 /** Situação da conta ativa na factory. Acompanha a troca de conta pelo menu da carteira. */
 export function VoterStatusCard() {
@@ -47,7 +47,7 @@ export function VoterStatusCard() {
     );
   } else if (voter.isPending) {
     body = (
-      <p className="flex items-center justify-center gap-2 py-14 text-sm text-muted-foreground">
+      <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
         <Loader2Icon className="size-4 animate-spin" />
         Consultando a factory…
       </p>
@@ -66,7 +66,7 @@ export function VoterStatusCard() {
 
     body = (
       <>
-        <dl className="divide-y">
+        <dl className="-mt-4 divide-y">
           <Row label="Conta">
             <AddressAvatar address={account} className="size-4" />
             <span className="font-mono text-xs" title={account}>
@@ -84,9 +84,9 @@ export function VoterStatusCard() {
             )}
           </Row>
 
-          <Row label="Cadastro">
+          <Row label="Registro">
             {registered ? (
-              <Badge className={positive}>Cadastrado</Badge>
+              <Badge className={positive}>Registrado</Badge>
             ) : (
               <Badge variant="outline" className="text-muted-foreground">
                 Pendente
@@ -104,8 +104,8 @@ export function VoterStatusCard() {
         </dl>
 
         {!isAuthorized && !registered && (
-          <InfoNote className="mt-5" title="Peça a autorização desta carteira.">
-            A autoridade precisa autorizar o endereço antes do cadastro.{" "}
+          <InfoNote className="mt-2" title="Peça a autorização desta carteira.">
+            A autoridade precisa autorizar o endereço antes do registro.{" "}
             <button
               type="button"
               className="inline-flex items-center gap-1 font-medium text-foreground underline underline-offset-4"
@@ -122,8 +122,8 @@ export function VoterStatusCard() {
         )}
 
         {registered && (
-          <InfoNote className="mt-5" title="Pronto para votar.">
-            Você vota nas eleições criadas depois do cadastro. Eleições anteriores congelaram a lista
+          <InfoNote className="mt-2" title="Pronto para votar.">
+            Você vota nas eleições criadas depois do registro. Eleições anteriores congelaram a lista
             de eleitores sem você.
           </InfoNote>
         )}
@@ -135,7 +135,7 @@ export function VoterStatusCard() {
     <SectionCard
       icon={UserCheckIcon}
       title="Situação da conta"
-      description="Autorização e cadastro da conta ativa."
+      description="Autorização e registro da conta ativa."
       action={
         account && (
           <Button

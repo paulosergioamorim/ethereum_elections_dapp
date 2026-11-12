@@ -35,8 +35,8 @@ describe("Admin (aba da autoridade)", () => {
     connectReturningUser({ accounts: [alice] });
     renderRoute("/admin");
 
-    expect(within(await voterRow(bob)).getByText("Cadastrado")).toBeInTheDocument();
-    expect(within(await voterRow(carol)).getByText("Aguardando cadastro")).toBeInTheDocument();
+    expect(within(await voterRow(bob)).getByText("Registrado")).toBeInTheDocument();
+    expect(within(await voterRow(carol)).getByText("Aguardando registro")).toBeInTheDocument();
     // autorizada e depois removida: não aparece
     // (o endereço dela continua no menu da carteira, fora da lista)
     expect(
@@ -44,7 +44,7 @@ describe("Admin (aba da autoridade)", () => {
     ).toHaveLength(0);
 
     const authorized = screen.getByRole("group", { name: "Carteiras autorizadas" });
-    const registered = screen.getByRole("group", { name: "Eleitores cadastrados" });
+    const registered = screen.getByRole("group", { name: "Eleitores registrados" });
     expect(await within(authorized).findByText("2")).toBeInTheDocument();
     expect(await within(registered).findByText("1")).toBeInTheDocument();
   });
@@ -112,7 +112,7 @@ describe("Admin (aba da autoridade)", () => {
     renderRoute("/admin");
 
     expect(
-      await screen.findByText("Cadastre pelo menos um eleitor antes de criar a eleição."),
+      await screen.findByText("Registre pelo menos um eleitor antes de criar a eleição."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Criar eleição" })).toBeDisabled();
   });

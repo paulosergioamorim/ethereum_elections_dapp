@@ -9,10 +9,10 @@ import { alice, bob, connectReturningUser, testIdentity } from "../helpers/mock-
 import { renderRoute } from "../helpers/render";
 
 async function registerButton() {
-  return screen.findByRole("button", { name: "Gerar identidade e cadastrar" });
+  return screen.findByRole("button", { name: "Gerar identidade e registrar" });
 }
 
-describe("Register (cadastro do eleitor)", () => {
+describe("Register (registro do eleitor)", () => {
   it("should register the identity derived from the wallet signature", async () => {
     mockChain({ owner: bob, voters: [{ address: alice }] });
     const wallet = connectReturningUser({ accounts: [alice] });
@@ -51,7 +51,7 @@ describe("Register (cadastro do eleitor)", () => {
     renderRoute("/register");
 
     expect(await screen.findByText(shortHex(numberToHex(commitment)))).toBeInTheDocument();
-    expect(screen.getByText("Esta conta já está cadastrada.")).toBeInTheDocument();
+    expect(screen.getByText("Esta conta já está registrada.")).toBeInTheDocument();
     expect(screen.getByText("Pronto para votar.")).toBeInTheDocument();
   });
 

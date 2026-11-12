@@ -10,10 +10,10 @@ import { useWallet } from "@/wallet";
 const stepLabels: Record<RegisterStep, string> = {
   signing: "Assine a mensagem na carteira…",
   sending: "Confirme a transação na carteira…",
-  confirming: "Cadastrando…",
+  confirming: "Registrando…",
 };
 
-/** Cadastro da conta ativa: assinatura, derivação da identidade e registro do compromisso. */
+/** Registro da conta ativa: assinatura, derivação da identidade e registro do compromisso. */
 export function RegistrationCard() {
   const { status, account, isWrongChain } = useWallet();
   const voter = useVoterStatus(account);
@@ -31,7 +31,7 @@ export function RegistrationCard() {
       ? "Não foi possível consultar a situação da conta."
       : "Consultando a situação da conta…";
   } else if (voter.data.commitment !== 0n) {
-    blockedReason = "Esta conta já está cadastrada.";
+    blockedReason = "Esta conta já está registrada.";
   } else if (!voter.data.isAuthorized) {
     blockedReason = "Esta conta não está autorizada pela autoridade.";
   }
@@ -61,12 +61,12 @@ export function RegistrationCard() {
       />
 
       <Button
-        className="mt-6 h-10 w-full"
+        className="mt-6 h-11 w-full text-base"
         onClick={() => register.mutate()}
         disabled={!!blockedReason || register.isPending}
       >
         {register.isPending && <Loader2Icon className="animate-spin" />}
-        {register.step ? stepLabels[register.step] : "Gerar identidade e cadastrar"}
+        {register.step ? stepLabels[register.step] : "Gerar identidade e registrar"}
       </Button>
 
       {blockedReason && !register.isPending && (

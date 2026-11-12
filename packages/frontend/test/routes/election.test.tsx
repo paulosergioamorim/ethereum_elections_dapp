@@ -7,13 +7,15 @@ import { REVEAL_BATCH_SIZE, type OpenedBallot } from "@/elections";
 import { openBallots } from "@/elections/tally-crypto";
 import { prepareVote } from "@/elections/vote-crypto";
 import { publicClient } from "@/lib/chain";
+import { shortAddress } from "@/lib/format";
+import { logRetry } from "@/lib/logs";
 import {
   mockChain,
   secondsFromNow,
   type MockBallot,
   type MockElection,
 } from "../helpers/mock-chain";
-import { alice, bob, connectReturningUser, testIdentity } from "../helpers/mock-wallet";
+import { alice, bob, carol, connectReturningUser, testIdentity } from "../helpers/mock-wallet";
 import { renderRoute } from "../helpers/render";
 
 // A cripto real (tlock + prova Semaphore) baixa artefatos e fala com o drand; aqui ela é simulada.
@@ -52,7 +54,7 @@ function votingElection(overrides: Partial<MockElection> = {}): MockElection {
   };
 }
 
-/** Alice cadastrada antes da criação da eleição, com a identidade que a carteira dela gera. */
+/** Alice registrada antes da criação da eleição, com a identidade que a carteira dela gera. */
 async function aliceRegistered(registeredAtBlock = 2n) {
   return { address: alice, commitment: (await testIdentity(alice)).commitment, registeredAtBlock };
 }
@@ -112,7 +114,7 @@ describe("Election (página da eleição)", () => {
     renderRoute(`/elections/${electionAddress}`);
 
     expect(
-      await screen.findByText(/se cadastrou depois da criação desta eleição/),
+      await screen.findByText(/se registrou depois da criação desta eleição/),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Votar" })).toBeDisabled();
     expect(wallet.calls).not.toContain("personal_sign");
@@ -123,11 +125,83 @@ describe("Election (página da eleição)", () => {
     connectReturningUser({ accounts: [alice] });
     renderRoute(`/elections/${electionAddress}`);
 
-    expect(await screen.findByText(/ainda não se cadastrou como eleitora/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Fazer o cadastro" })).toHaveAttribute(
+    expect(await screen.findByText(/ainda não se registrou como eleitora/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Fazer o registro" })).toHaveAttribute(
       "href",
       "/register",
     );
+  });
+
+  describe("when the voter list cannot be read", () => {
+    const rpcGaveUp = (calls: number) =>
+      // 2 leituras (MemberAdded e MemberRemoved), cada uma tentada `attempts` vezes
+      vi
+        .mocked(publicClient.getContractEvents)
+        .mock.calls.filter(([{ eventName }]) => eventName === "MemberAdded").length >= calls;
+
+    it("should still tell an unregistered account to register, instead of the list error", async () => {
+      const chain = mockChain({
+        owner: carol,
+        voters: [{ address: bob }],
+        election: votingElection(),
+      });
+      chain.failGroupLogs(true);
+      connectReturningUser({ accounts: [bob] });
+      renderRoute(`/elections/${electionAddress}`);
+
+      expect(await screen.findByText(/ainda não se registrou como eleitora/)).toBeInTheDocument();
+      await waitFor(() => expect(rpcGaveUp(logRetry.attempts)).toBe(true));
+      expect(screen.queryByText(/Não foi possível carregar a lista de eleitores/)).not.toBeInTheDocument();
+    });
+
+    it("should read the list again when the account changes, without reloading the page", async () => {
+      const chain = mockChain({
+        owner: carol,
+        voters: [{ address: bob }, await aliceRegistered()],
+        election: votingElection(),
+      });
+      chain.failGroupLogs(true);
+      connectReturningUser({ accounts: [bob, alice], active: bob });
+      const user = userEvent.setup();
+      renderRoute(`/elections/${electionAddress}`);
+
+      await screen.findByText(/ainda não se registrou como eleitora/);
+      await waitFor(() => expect(rpcGaveUp(logRetry.attempts)).toBe(true));
+
+      // o RPC volta ao normal e o usuário troca para a conta registrada
+      chain.failGroupLogs(false);
+      await user.click(await screen.findByRole("button", { name: /conta ativa/i }));
+      await user.click(
+        await screen.findByRole("menuitemradio", { name: new RegExp(shortAddress(alice)) }),
+      );
+
+      expect(
+        await screen.findByText("Sua conta está na lista de eleitores desta eleição."),
+      ).toBeInTheDocument();
+    });
+
+    it("should let the voter try again", async () => {
+      const chain = mockChain({
+        owner: carol,
+        voters: [await aliceRegistered()],
+        election: votingElection(),
+      });
+      chain.failGroupLogs(true);
+      connectReturningUser({ accounts: [alice] });
+      const user = userEvent.setup();
+      renderRoute(`/elections/${electionAddress}`);
+
+      expect(
+        await screen.findByText(/Não foi possível carregar a lista de eleitores/),
+      ).toBeInTheDocument();
+
+      chain.failGroupLogs(false);
+      await user.click(screen.getByRole("button", { name: "Tentar de novo" }));
+
+      expect(
+        await screen.findByText("Sua conta está na lista de eleitores desta eleição."),
+      ).toBeInTheDocument();
+    });
   });
 
   it("should count down to the start of a scheduled election", async () => {
@@ -160,6 +234,8 @@ describe("Election (página da eleição)", () => {
     expect(await screen.findByText("3 · 60%")).toBeInTheDocument();
     expect(screen.getAllByText("1 · 20%")).toHaveLength(2);
     expect(screen.getByText("Todas as cédulas foram apuradas.")).toBeInTheDocument();
+    // o eleito é quem tem mais votos entre os candidatos (nulos não contam)
+    expect(screen.getByText("Eleito").closest("li")).toHaveTextContent("3 · 60%");
     expect(screen.queryByRole("button", { name: "Votar" })).not.toBeInTheDocument();
   });
 

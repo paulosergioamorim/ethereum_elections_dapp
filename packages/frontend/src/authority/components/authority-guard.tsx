@@ -1,4 +1,4 @@
-import { ArrowRightIcon, Loader2Icon, LockKeyholeIcon } from "lucide-react";
+import { Loader2Icon, LockKeyholeIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export function AuthorityGuard({ children }: { children: ReactNode }) {
     message = (
       <>
         A conta ativa não é a autoridade desta factory. Só a conta{" "}
-        <span className="font-mono">{shortAddress(owner)}</span> administra. Cadastro, voto e
+        <span className="font-mono">{shortAddress(owner)}</span> administra. Registro, voto e
         apuração estão nas outras abas.
       </>
     );
@@ -60,19 +60,18 @@ export function AuthorityGuard({ children }: { children: ReactNode }) {
   return (
     <section
       aria-labelledby="authority-guard-title"
-      className="mx-auto my-8 flex max-w-xl flex-col items-center gap-4 rounded-2xl border bg-card p-10 text-center"
+      className="flex max-w-xl flex-col items-start gap-5"
     >
-      <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+      <span className="flex size-12 items-center justify-center rounded bg-primary text-primary-foreground">
         <LockKeyholeIcon className="size-6" />
       </span>
-      <h1 id="authority-guard-title" className="text-xl font-semibold">
+      <h1 id="authority-guard-title" className="font-display text-3xl leading-[1.05] sm:text-4xl">
         Área da autoridade eleitoral
       </h1>
-      <p className="text-sm leading-relaxed text-muted-foreground">{message}</p>
+      <p className="leading-relaxed text-muted-foreground">{message}</p>
       {action}
-      <Link to="/" className="text-sm font-medium text-primary hover:underline">
+      <Link to="/" className="text-sm font-medium text-primary underline underline-offset-4">
         Ir para as eleições
-        <ArrowRightIcon className="ml-1 inline size-4" />
       </Link>
     </section>
   );

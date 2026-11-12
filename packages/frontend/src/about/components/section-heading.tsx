@@ -10,7 +10,7 @@ export function SectionHeading({
 }) {
   return (
     <div className="space-y-1">
-      <h2 id={id} className="text-xl font-semibold tracking-tight">
+      <h2 id={id} className="font-display text-2xl leading-tight">
         {title}
       </h2>
       <p className="text-sm text-muted-foreground">{description}</p>

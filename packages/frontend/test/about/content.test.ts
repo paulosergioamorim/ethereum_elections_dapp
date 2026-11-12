@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { journey, limitations, technologies } from "@/about";
+import { limitations, supportingTools, technologies } from "@/about";
 
 const allDocs = [
   ...technologies.flatMap((technology) => technology.docs),
+  ...supportingTools.map((tool) => tool.doc),
   ...limitations.flatMap((item) => (item.doc ? [item.doc] : [])),
 ];
 
@@ -20,12 +21,7 @@ describe("conteúdo da página Sobre", () => {
     }
   });
 
-  it("should give every card a unique anchor that the journey can point to", () => {
-    const ids = technologies.map((technology) => technology.id);
-    expect(new Set(ids).size).toBe(ids.length);
-
-    for (const topic of journey.flatMap((step) => step.topics)) {
-      expect(ids, topic.label).toContain(topic.target);
-    }
+  it("should focus on Ethereum and Semaphore, each with a unique anchor", () => {
+    expect(technologies.map((technology) => technology.id)).toEqual(["ethereum", "semaphore"]);
   });
 });

@@ -11,10 +11,10 @@ export function EmptyState({
   description: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
-      <Icon className="mb-1 size-8 text-muted-foreground/60" />
-      <p className="font-medium">{title}</p>
-      <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
+    <div className="flex flex-col items-start gap-1.5 rounded border border-dashed px-5 py-8">
+      <Icon className="mb-2 size-6 text-primary" />
+      <p className="font-semibold">{title}</p>
+      <p className="max-w-md text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }

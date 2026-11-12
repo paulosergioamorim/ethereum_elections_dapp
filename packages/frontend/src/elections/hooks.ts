@@ -43,10 +43,10 @@ export function useElectionGroup(election: ElectionDetails | undefined) {
 }
 
 /**
- * Se a conta ativa pode votar nesta eleição. Usa o cadastro on-chain (`commitmentOf`) e a árvore
+ * Se a conta ativa pode votar nesta eleição. Usa o registro on-chain (`commitmentOf`) e a árvore
  * congelada da eleição: dá a resposta antes de pedir qualquer assinatura.
- * - `not-registered`: a conta nunca se cadastrou;
- * - `registered-after`: cadastrou-se depois da criação da eleição, então não está na lista dela.
+ * - `not-registered`: a conta nunca se registrou;
+ * - `registered-after`: registrou-se depois da criação da eleição, então não está na lista dela.
  */
 export type VoteEligibility =
   | "disconnected"
@@ -56,32 +56,60 @@ export type VoteEligibility =
   | "registered-after"
   | "eligible";
 
-export function useVoteEligibility(election: ElectionDetails | undefined): VoteEligibility {
+export function useVoteEligibility(election: ElectionDetails | undefined): {
+  eligibility: VoteEligibility;
+  /** Refaz a leitura da conta e da árvore (botão "Tentar de novo" quando deu erro). */
+  retry: () => void;
+} {
   const { status, account } = useWallet();
   const voter = useVoterStatus(account);
   const group = useElectionGroup(election);
+  const { refetch: refetchGroup, isError: groupFailed } = group;
 
-  if (status !== "connected") {
-    return "disconnected";
+  // a árvore não depende da conta e nunca fica velha, então uma falha ficaria presa na tela:
+  // trocar de conta é a hora natural de tentar de novo
+  useEffect(() => {
+    if (groupFailed) {
+      void refetchGroup();
+    }
+    // só na troca de conta (a dependência é de propósito): refazer a cada falha seria um laço
+  }, [account]);
+
+  function retry() {
+    void voter.refetch();
+    void refetchGroup();
   }
 
-  if (voter.isError || group.isError) {
-    return "error";
+  function decide(): VoteEligibility {
+    if (status !== "connected") {
+      return "disconnected";
+    }
+
+    if (voter.isError) {
+      return "error";
+    }
+
+    if (!voter.data) {
+      return "loading";
+    }
+
+    // quem não está registrado não depende da árvore, então o erro dela não importa aqui
+    if (voter.data.commitment === 0n) {
+      return "not-registered";
+    }
+
+    if (group.isError) {
+      return "error";
+    }
+
+    if (!group.data) {
+      return "loading";
+    }
+
+    return group.data.indexOf(voter.data.commitment) >= 0 ? "eligible" : "registered-after";
   }
 
-  if (!voter.data) {
-    return "loading";
-  }
-
-  if (voter.data.commitment === 0n) {
-    return "not-registered";
-  }
-
-  if (!group.data) {
-    return "loading";
-  }
-
-  return group.data.indexOf(voter.data.commitment) >= 0 ? "eligible" : "registered-after";
+  return { eligibility: decide(), retry };
 }
 
 /** Etapa do voto em andamento, para o botão dizer o que está acontecendo. */
@@ -108,11 +136,11 @@ export function useVote(election: ElectionDetails) {
       ]);
 
       if (registered === 0n) {
-        throw new Error("Esta conta não se cadastrou como eleitora.");
+        throw new Error("Esta conta não se registrou como eleitora.");
       }
 
       if (group.indexOf(registered) < 0) {
-        throw new Error("Esta conta se cadastrou depois da criação desta eleição e não pode votar nela.");
+        throw new Error("Esta conta se registrou depois da criação desta eleição e não pode votar nela.");
       }
 
       const receipt = await runTransaction(
@@ -126,7 +154,7 @@ export function useVote(election: ElectionDetails) {
           const identity = await deriveVoterIdentity(client);
 
           if (identity.commitment !== registered) {
-            throw new Error("A identidade gerada pela carteira não confere com o cadastro desta conta.");
+            throw new Error("A identidade gerada pela carteira não confere com o registro desta conta.");
           }
 
           setStep("proving");

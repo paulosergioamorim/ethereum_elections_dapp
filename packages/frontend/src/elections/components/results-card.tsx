@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { refreshTally, useElectionResults } from "../hooks";
 import { formatTimestamp, phaseAt } from "../phase";
 import type { ElectionDetails } from "../queries";
+import { electedCandidate } from "../ballots";
 import { ResultRow } from "./result-row";
 import { RevealPanel } from "./reveal-panel";
 
@@ -32,25 +33,36 @@ export function ResultsCard({ election }: { election: ElectionDetails }) {
     );
   } else if (!results.data) {
     body = (
-      <p className="py-14 text-center text-sm text-muted-foreground">
+      <p className="py-8 text-sm text-muted-foreground">
         {results.isError ? "Não foi possível ler o resultado." : "Lendo o resultado…"}
       </p>
     );
   } else {
     const { tally, nullVotes, unrevealed, revealed } = results.data;
+    const elected = electedCandidate(
+      election.candidates.map((_, index) => tally[index] ?? 0n),
+      unrevealed,
+    );
 
     body = (
       <>
-        <ul className="space-y-4" aria-label="Resultado publicado">
+        <ul className="space-y-5" aria-label="Resultado publicado">
           {election.candidates.map((candidate, index) => (
             <ResultRow
               key={index}
               label={candidate}
               votes={tally[index] ?? 0n}
               base={revealed}
+              elected={index === elected}
+              dimmed={elected !== undefined && index !== elected}
             />
           ))}
-          <ResultRow label="Nulos" votes={nullVotes} base={revealed} />
+          <ResultRow
+            label="Nulos"
+            votes={nullVotes}
+            base={revealed}
+            dimmed={elected !== undefined}
+          />
         </ul>
 
         <p className="mt-5 text-xs text-muted-foreground">
@@ -59,8 +71,14 @@ export function ResultsCard({ election }: { election: ElectionDetails }) {
             : `${unrevealed.toString()} cédula(s) ainda fechada(s): os percentuais consideram só as abertas.`}
         </p>
 
+        {unrevealed === 0n && revealed > 0n && elected === undefined && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Nenhum candidato foi eleito: houve empate ou só votos nulos.
+          </p>
+        )}
+
         {unrevealed > 0n && (
-          <div className="mt-5 border-t pt-5">
+          <div className="mt-6 border-t border-dashed pt-6">
             <RevealPanel election={election} />
           </div>
         )}

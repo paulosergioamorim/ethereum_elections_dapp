@@ -97,16 +97,16 @@ describe("aviso global das mutations", () => {
   it("should still report errors that happen outside a transaction", async () => {
     const error = vi.spyOn(toast, "error");
     const observer = new MutationObserver(createQueryClient(), {
-      meta: { errorTitle: "Não foi possível fazer o cadastro" },
+      meta: { errorTitle: "Não foi possível fazer o registro" },
       mutationFn: async () => {
-        throw new Error("Esta conta já está cadastrada.");
+        throw new Error("Esta conta já está registrada.");
       },
     });
 
     await observer.mutate().catch(() => undefined);
 
-    expect(error).toHaveBeenCalledWith("Não foi possível fazer o cadastro", {
-      description: "Esta conta já está cadastrada.",
+    expect(error).toHaveBeenCalledWith("Não foi possível fazer o registro", {
+      description: "Esta conta já está registrada.",
     });
   });
 });

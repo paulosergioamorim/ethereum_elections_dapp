@@ -8,11 +8,11 @@ const messages: Record<string, string> = {
   InvalidVoterAddress: "Há um endereço de eleitor inválido na lista.",
   UnauthorizedVoter: "Esta carteira não está autorizada a votar.",
   CommitmentCannotBeZero: "A identidade do eleitor é inválida.",
-  AlreadyRegisteredIdentityCommitment: "Esta carteira já cadastrou uma identidade.",
+  AlreadyRegisteredIdentityCommitment: "Esta carteira já registrou uma identidade.",
   RenounceDisabled: "A factory não pode ficar sem dono.",
   // Election
   InvalidMerkleRoot:
-    "Ainda não há eleitores cadastrados. Cadastre pelo menos um antes de criar a eleição.",
+    "Ainda não há eleitores registrados. Registre pelo menos um antes de criar a eleição.",
   InvalidVotingStart: "O início da votação já passou. Escolha um horário no futuro.",
   InvalidVotingDuration: "O fim da votação precisa ser depois do início.",
   InvalidCandidatesQuantity: "A eleição precisa de pelo menos 2 candidatos.",
@@ -27,7 +27,7 @@ const messages: Record<string, string> = {
   Semaphore__MerkleTreeDepthIsNotSupported: "A prova foi gerada para uma árvore de tamanho não suportado.",
   // Semaphore (LeanIMT)
   WrongSiblingNodes: "A lista de eleitores mudou enquanto a remoção era preparada. Tente de novo.",
-  LeafAlreadyExists: "Esta identidade já está cadastrada no grupo.",
+  LeafAlreadyExists: "Esta identidade já está registrada no grupo.",
   LeafDoesNotExist: "Esta identidade não está no grupo de eleitores.",
 };
 

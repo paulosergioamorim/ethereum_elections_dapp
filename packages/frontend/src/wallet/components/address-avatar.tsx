@@ -9,7 +9,7 @@ export function AddressAvatar({ address, className }: { address: Address; classN
   return (
     <span
       aria-hidden
-      className={cn("inline-block size-5 shrink-0 rounded-full", className)}
+      className={cn("inline-block size-5 shrink-0 rounded-xs", className)}
       style={{
         backgroundImage: `linear-gradient(135deg, hsl(${hue} 80% 60%), hsl(${secondHue} 80% 40%))`,
       }}

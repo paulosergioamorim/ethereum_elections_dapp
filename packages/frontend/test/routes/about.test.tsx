@@ -1,6 +1,6 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { journey, technologies } from "@/about";
+import { journey, supportingTools, technologies } from "@/about";
 import { factoryAddress } from "@/contracts";
 import { mockChain } from "../helpers/mock-chain";
 import { bob } from "../helpers/mock-wallet";
@@ -39,20 +39,20 @@ describe("About (página Sobre)", () => {
     }
   });
 
-  it("should point each journey shortcut to a card on the page", async () => {
-    const { container } = renderRoute("/about");
+  it("should show the journey of a vote and the supporting tools, each with its documentation", async () => {
+    renderRoute("/about");
     await screen.findByRole("heading", { name: "O caminho de um voto" });
 
     for (const step of journey) {
-      const shortcuts = within(
-        screen.getByRole("list", { name: `Tecnologias da etapa ${step.title}` }),
-      ).getAllByRole("link");
-
-      for (const shortcut of shortcuts) {
-        const target = shortcut.getAttribute("href")!.slice(1);
-        expect(container.querySelector(`#${target}`), target).not.toBeNull();
-      }
+      expect(screen.getByRole("heading", { level: 3, name: step.title })).toBeInTheDocument();
     }
+
+    const tools = screen.getByRole("heading", { name: "Também no projeto" }).closest("section")!;
+    expect(
+      within(tools)
+        .getAllByRole("link", { name: /abre em nova aba/ })
+        .map((link) => link.getAttribute("href")),
+    ).toEqual(supportingTools.map((tool) => tool.doc.href));
   });
 
   it("should show the real contracts of this deployment, with explorer links", async () => {

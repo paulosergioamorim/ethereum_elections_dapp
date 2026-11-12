@@ -30,7 +30,7 @@ export function Election() {
 
   if (election.isPending) {
     return (
-      <p className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
+      <p className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
         <Loader2Icon className="size-4 animate-spin" />
         Lendo a eleição na rede…
       </p>
@@ -41,7 +41,7 @@ export function Election() {
     const notFound = election.error instanceof ElectionNotFoundError;
 
     return (
-      <div className="space-y-4 py-12 text-center">
+      <div className="max-w-xl space-y-4 py-8">
         <EmptyState
           icon={notFound ? SearchXIcon : TriangleAlertIcon}
           title={notFound ? "Eleição não encontrada." : "Não foi possível ler a eleição."}
@@ -61,12 +61,11 @@ export function Election() {
   const data = election.data;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <PageHeader
-        eyebrow="Eleição"
         title={data.title}
         description={
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <p>
               Votação de {formatTimestamp(data.votingStart)} até {formatTimestamp(data.votingEnd)}.
             </p>
@@ -79,7 +78,7 @@ export function Election() {
 
       <ConnectWalletNotice>Conecte sua carteira para votar nesta eleição.</ConnectWalletNotice>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[24rem_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-x-12 gap-y-10 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <VoteCard election={data} />
         <ResultsCard election={data} />
       </div>

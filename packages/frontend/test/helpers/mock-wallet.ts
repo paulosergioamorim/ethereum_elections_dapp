@@ -187,7 +187,7 @@ function testAccount(address: Address) {
   return privateKeyToAccount(key);
 }
 
-/** A identidade que a conta gera ao assinar a mensagem do app: a mesma do cadastro e do voto. */
+/** A identidade que a conta gera ao assinar a mensagem do app: a mesma do registro e do voto. */
 export async function testIdentity(address: Address) {
   const signature = await testAccount(address).signMessage({
     message: identityMessage(11155111, factoryAddress),

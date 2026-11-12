@@ -2,8 +2,30 @@
 const RANGE_SIZE = 50_000n;
 
 /**
+ * Quantas vezes cada faixa é tentada e a espera entre as tentativas (cresce a cada falha).
+ * RPCs públicos falham ao acaso: o balanceador manda a chamada para um nó que podou o histórico
+ * ("pruned history unavailable") e a mesma chamada passa na vez seguinte. Os testes zeram a espera.
+ */
+export const logRetry = { attempts: 3, delayMs: 400 };
+
+async function withRetry<T>(run: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      if (attempt >= logRetry.attempts) {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, logRetry.delayMs * attempt));
+    }
+  }
+}
+
+/**
  * Busca eventos de `fromBlock` a `toBlock`, em faixas de blocos consecutivas.
- * As faixas vão uma de cada vez para não estourar o limite de requisições de RPCs gratuitos.
+ * As faixas vão uma de cada vez para não estourar o limite de requisições de RPCs gratuitos, e cada
+ * uma é refeita se falhar, sem repetir as que já deram certo.
  * O `toBlock` vem de `freshBlockNumber()`, para incluir as transações que acabaram de ser confirmadas.
  */
 export async function fetchLogsInRanges<T>(
@@ -14,7 +36,7 @@ export async function fetchLogsInRanges<T>(
 
   for (let start = fromBlock; start <= toBlock; start += RANGE_SIZE) {
     const end = start + RANGE_SIZE - 1n < toBlock ? start + RANGE_SIZE - 1n : toBlock;
-    logs.push(...(await fetchRange({ fromBlock: start, toBlock: end })));
+    logs.push(...(await withRetry(() => fetchRange({ fromBlock: start, toBlock: end }))));
   }
 
   return logs;

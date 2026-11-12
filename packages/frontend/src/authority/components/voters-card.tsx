@@ -66,7 +66,7 @@ function RemoveVoterButton({ voter }: { voter: Voter }) {
   );
 }
 
-/** Carteiras autorizadas e a situação do cadastro de cada uma (leitura pública). */
+/** Carteiras autorizadas e a situação do registro de cada uma (leitura pública). */
 export function VotersCard() {
   const voters = useVoters();
   const { canAdminister } = useAuthority();
@@ -79,7 +79,7 @@ export function VotersCard() {
 
   if (voters.isPending) {
     body = (
-      <p className="flex items-center justify-center gap-2 py-14 text-sm text-muted-foreground">
+      <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
         <Loader2Icon className="size-4 animate-spin" />
         Lendo os eleitores na rede…
       </p>
@@ -97,20 +97,20 @@ export function VotersCard() {
       <EmptyState
         icon={UsersIcon}
         title="Os eleitores aparecem por aqui."
-        description="Autorize carteiras para que elas possam se cadastrar."
+        description="Autorize carteiras para que elas possam se registrar."
       />
     );
   } else if (visible?.length === 0) {
     body = (
-      <p className="py-10 text-center text-sm text-muted-foreground">
+      <p className="py-6 text-sm text-muted-foreground">
         Nenhuma carteira encontrada.
       </p>
     );
   } else {
     body = (
-      <ul className="space-y-2">
+      <ul className="-mt-4 divide-y">
         {visible?.map((voter) => (
-          <li key={voter.address} className="flex items-center gap-3 rounded-xl border p-3">
+          <li key={voter.address} className="flex items-center gap-3 py-3">
             <AddressAvatar address={voter.address} />
 
             <span className="min-w-0 flex-1 truncate font-mono text-xs" title={voter.address}>
@@ -118,12 +118,10 @@ export function VotersCard() {
             </span>
 
             {voter.commitment !== 0n ? (
-              <Badge className="bg-primary/10 text-primary">
-                Cadastrado
-              </Badge>
+              <Badge className="border-primary bg-transparent text-primary">Registrado</Badge>
             ) : (
               <Badge variant="outline" className="text-muted-foreground">
-                Aguardando cadastro
+                Aguardando registro
               </Badge>
             )}
 
@@ -138,7 +136,7 @@ export function VotersCard() {
     <SectionCard
       icon={UsersIcon}
       title="Eleitores"
-      description="Carteiras autorizadas e a situação do cadastro de cada uma."
+      description="Carteiras autorizadas e a situação do registro de cada uma."
       action={
         <Button
           variant="outline"

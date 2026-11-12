@@ -24,7 +24,7 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
   ) : null;
 }
 
-/** Passo 3 da autoridade: criar a eleição, que congela os eleitores cadastrados até agora. */
+/** Passo 3 da autoridade: criar a eleição, que congela os eleitores registrados até agora. */
 export function CreateElectionCard({ registeredVoters }: { registeredVoters: number | undefined }) {
   const { reason } = useAuthority();
   const createElection = useCreateElection();
@@ -35,7 +35,7 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
   const blockedReason =
     reason ??
     (registeredVoters === 0
-      ? "Cadastre pelo menos um eleitor antes de criar a eleição."
+      ? "Registre pelo menos um eleitor antes de criar a eleição."
       : undefined);
 
   function update<Field extends keyof ElectionFormValues>(
@@ -114,7 +114,7 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
 
           {values.candidates.map((candidate, index) => (
             <div key={index} className="flex items-center gap-2">
-              <span className="w-5 shrink-0 text-right text-xs text-muted-foreground">
+              <span aria-hidden className="w-5 shrink-0 text-right font-numeral text-xl leading-none text-primary">
                 {index + 1}
               </span>
               <Input
@@ -185,7 +185,7 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
 
         <Button
           type="submit"
-          className="h-10 w-full"
+          className="h-11 w-full text-base"
           disabled={!!blockedReason || createElection.isPending}
         >
           {createElection.isPending && <Loader2Icon className="animate-spin" />}
@@ -197,8 +197,8 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
         )}
       </form>
 
-      <InfoNote className="mt-6" title="Quem se cadastrar depois não vota.">
-        Cada eleição usa a lista de eleitores cadastrados no momento em que foi criada.
+      <InfoNote className="mt-6" title="Quem se registrar depois não vota.">
+        Cada eleição usa a lista de eleitores registrados no momento em que foi criada.
       </InfoNote>
     </SectionCard>
   );

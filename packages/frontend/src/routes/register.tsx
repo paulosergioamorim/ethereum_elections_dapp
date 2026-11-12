@@ -4,18 +4,17 @@ import { ConnectWalletNotice } from "@/wallet";
 
 export function Register() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <PageHeader
-        eyebrow="Cadastro"
-        title="Cadastro de eleitor"
-        description="Registre sua identidade anônima uma vez: ela vale para todas as eleições criadas depois do cadastro."
+        title="Registro de eleitor"
+        description="Registre sua identidade anônima uma vez: ela vale para todas as eleições criadas depois do registro."
       />
 
       <ConnectWalletNotice>
-        Conecte a carteira autorizada pela autoridade para se cadastrar.
+        Conecte a carteira autorizada pela autoridade para se registrar.
       </ConnectWalletNotice>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[24rem_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-x-12 gap-y-10 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <RegistrationCard />
         <VoterStatusCard />
       </div>

@@ -9,7 +9,7 @@ import { REPOSITORY_URL } from "@/lib/project";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="space-y-1 py-3 first:pt-0 last:pb-0">
+    <div className="space-y-1 py-3">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="min-w-0 text-sm">{children}</dd>
     </div>
@@ -60,7 +60,7 @@ export function DeploymentCard() {
       title="Nesta implantação"
       description="Os endereços reais, para conferir no explorador de blocos."
     >
-      <dl className="divide-y">
+      <dl className="-mt-4 divide-y">
         <Row label="Rede">
           {appChain.name} · chain ID {appChain.id}
         </Row>

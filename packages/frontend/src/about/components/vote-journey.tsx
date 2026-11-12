@@ -1,42 +1,24 @@
-import { IconBubble } from "@/components/icon-bubble";
 import { journey } from "../content";
 import { SectionHeading } from "./section-heading";
 
-/** As quatro etapas de uma eleição, cada uma com atalhos para os cards que a explicam. */
+/** As quatro etapas de uma eleição, em ordem. */
 export function VoteJourney() {
   return (
     <section aria-labelledby="journey-title" className="space-y-4">
       <SectionHeading
         id="journey-title"
         title="O caminho de um voto"
-        description="Do cadastro à apuração, cada etapa usa uma peça diferente; os atalhos levam à explicação de cada uma."
+        description="Do registro à apuração, em quatro etapas."
       />
 
-      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="grid border-y-2 border-foreground max-sm:divide-y sm:grid-cols-2 lg:grid-cols-4 lg:divide-x">
         {journey.map((step, index) => (
-          <li key={step.title} className="flex flex-col gap-3 rounded-2xl border bg-card p-5">
-            <div className="flex items-center gap-3">
-              <IconBubble icon={step.icon} />
-              <span className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">
-                Etapa {index + 1}
-              </span>
-            </div>
-
+          <li key={step.title} className="space-y-1.5 py-4 lg:px-5 lg:first:pl-0 lg:last:pr-0">
+            <span aria-hidden className="block font-numeral text-4xl leading-none text-primary">
+              {index + 1}
+            </span>
             <h3 className="font-semibold">{step.title}</h3>
-            <p className="flex-1 text-sm leading-relaxed text-muted-foreground">{step.description}</p>
-
-            <ul aria-label={`Tecnologias da etapa ${step.title}`} className="flex flex-wrap gap-1.5">
-              {step.topics.map((topic) => (
-                <li key={topic.label}>
-                  <a
-                    href={`#${topic.target}`}
-                    className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors hover:border-primary hover:text-primary"
-                  >
-                    {topic.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <p className="text-sm leading-relaxed text-muted-foreground">{step.description}</p>
           </li>
         ))}
       </ol>

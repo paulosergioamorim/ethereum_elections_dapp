@@ -1,4 +1,3 @@
-import { UserCheckIcon, UsersIcon, VoteIcon } from "lucide-react";
 import {
   AuthorityGuard,
   AuthorizeVotersCard,
@@ -6,7 +5,7 @@ import {
   VotersCard,
 } from "@/authority";
 import { PageHeader } from "@/components/page-header";
-import { StatCard } from "@/components/stat-card";
+import { StatCard, StatRow } from "@/components/stat-card";
 import { useElections } from "@/elections";
 import { useVoters } from "@/factory";
 
@@ -25,35 +24,31 @@ function AuthorityPanel() {
   const registered = voters.data?.filter((voter) => voter.commitment !== 0n).length;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <PageHeader
-        eyebrow="Autoridade"
         title="Autoridade eleitoral"
-        description="Autorize carteiras, acompanhe os cadastros e crie eleições."
+        description="Autorize carteiras, acompanhe os registros e crie eleições."
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <StatRow>
         <StatCard
-          icon={UsersIcon}
           label="Carteiras autorizadas"
           value={voters.data?.length}
-          caption="Podem se cadastrar como eleitoras"
+          caption="Podem se registrar como eleitoras"
         />
         <StatCard
-          icon={UserCheckIcon}
-          label="Eleitores cadastrados"
+          label="Eleitores registrados"
           value={registered}
           caption="Entram nas próximas eleições"
         />
         <StatCard
-          icon={VoteIcon}
           label="Eleições"
           value={elections.data?.length}
           caption="Criadas por esta factory"
         />
-      </div>
+      </StatRow>
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-x-12 gap-y-10 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <div className="space-y-6">
           <AuthorizeVotersCard authorized={voters.data?.map((voter) => voter.address)} />
           <CreateElectionCard registeredVoters={registered} />

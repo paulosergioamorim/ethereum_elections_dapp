@@ -1,12 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { IconBubble } from "@/components/icon-bubble";
 import { cn } from "@/lib/utils";
 
 /**
- * Card de seção com cabeçalho e corpo separados por uma linha.
- * - `stacked`: ícone em bolha acima do título (cards de ação, como "Como votar");
- * - `inline`: ícone ao lado do título (cards de lista, como "Eleições").
+ * Seção de uma página, em duas formas:
+ * - `stacked`: formulário. Folha branca com uma faixa verde no topo, como o cabeçalho de um impresso;
+ * - `inline`: registro. Sem caixa: título sobre o papel, uma régua e as linhas da lista.
  */
 export function SectionCard({
   id,
@@ -26,29 +25,40 @@ export function SectionCard({
   description?: string;
   /** Botão no canto do cabeçalho (ex.: atualizar). */
   action?: ReactNode;
-  /** Controles abaixo da descrição, antes da linha (ex.: busca). */
+  /** Controles abaixo da descrição, antes da régua (ex.: busca). */
   toolbar?: ReactNode;
   layout?: "stacked" | "inline";
   className?: string;
   children: ReactNode;
 }) {
+  if (layout === "stacked") {
+    return (
+      <section id={id} className={cn("overflow-hidden rounded border bg-card", className)}>
+        <div className="flex items-start gap-3 bg-primary px-5 py-4 text-primary-foreground">
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <h2 className="flex items-center gap-2 font-display text-lg">
+              <Icon aria-hidden className="size-[1.1rem] shrink-0" />
+              {title}
+            </h2>
+            {description && <p className="text-sm text-primary-foreground/85">{description}</p>}
+          </div>
+
+          {action}
+        </div>
+
+        {toolbar && <div className="border-b p-5">{toolbar}</div>}
+
+        <div className="p-5">{children}</div>
+      </section>
+    );
+  }
+
   return (
-    <section id={id} className={cn("flex flex-col rounded-2xl border bg-card", className)}>
-      <div className="space-y-4 p-5">
+    <section id={id} className={cn("flex flex-col", className)}>
+      <div className="space-y-4 pb-4">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1 space-y-1">
-            {layout === "stacked" ? (
-              <>
-                <IconBubble icon={Icon} className="mb-3" />
-                <h2 className="text-lg font-semibold">{title}</h2>
-              </>
-            ) : (
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <Icon className="size-5 text-primary" />
-                {title}
-              </h2>
-            )}
-
+            <h2 className="font-display text-2xl leading-tight">{title}</h2>
             {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
 
@@ -58,7 +68,7 @@ export function SectionCard({
         {toolbar}
       </div>
 
-      <div className="flex-1 border-t p-5">{children}</div>
+      <div className="flex-1 border-t-2 border-foreground pt-4">{children}</div>
     </section>
   );
 }
