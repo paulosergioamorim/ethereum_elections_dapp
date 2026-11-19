@@ -79,7 +79,7 @@ export function VotersCard() {
 
   if (voters.isPending) {
     body = (
-      <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+      <p className="flex items-center justify-center gap-2 py-14 text-sm text-muted-foreground">
         <Loader2Icon className="size-4 animate-spin" />
         Lendo os eleitores na rede…
       </p>
@@ -102,15 +102,15 @@ export function VotersCard() {
     );
   } else if (visible?.length === 0) {
     body = (
-      <p className="py-6 text-sm text-muted-foreground">
+      <p className="py-10 text-center text-sm text-muted-foreground">
         Nenhuma carteira encontrada.
       </p>
     );
   } else {
     body = (
-      <ul className="-mt-4 divide-y">
+      <ul className="space-y-2">
         {visible?.map((voter) => (
-          <li key={voter.address} className="flex items-center gap-3 py-3">
+          <li key={voter.address} className="flex items-center gap-3 rounded-xl border p-3">
             <AddressAvatar address={voter.address} />
 
             <span className="min-w-0 flex-1 truncate font-mono text-xs" title={voter.address}>
@@ -118,7 +118,9 @@ export function VotersCard() {
             </span>
 
             {voter.commitment !== 0n ? (
-              <Badge className="border-primary bg-transparent text-primary">Registrado</Badge>
+              <Badge className="bg-primary/10 text-primary">
+                Registrado
+              </Badge>
             ) : (
               <Badge variant="outline" className="text-muted-foreground">
                 Aguardando registro

@@ -21,14 +21,14 @@ import { AddressAvatar, useWallet } from "@/wallet";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3.5">
+    <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="flex items-center gap-2 text-sm">{children}</dd>
     </div>
   );
 }
 
-const positive = "border-primary bg-transparent text-primary";
+const positive = "bg-primary/10 text-primary";
 
 /** Situação da conta ativa na factory. Acompanha a troca de conta pelo menu da carteira. */
 export function VoterStatusCard() {
@@ -47,7 +47,7 @@ export function VoterStatusCard() {
     );
   } else if (voter.isPending) {
     body = (
-      <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+      <p className="flex items-center justify-center gap-2 py-14 text-sm text-muted-foreground">
         <Loader2Icon className="size-4 animate-spin" />
         Consultando a factory…
       </p>
@@ -66,7 +66,7 @@ export function VoterStatusCard() {
 
     body = (
       <>
-        <dl className="-mt-4 divide-y">
+        <dl className="divide-y">
           <Row label="Conta">
             <AddressAvatar address={account} className="size-4" />
             <span className="font-mono text-xs" title={account}>
@@ -104,7 +104,7 @@ export function VoterStatusCard() {
         </dl>
 
         {!isAuthorized && !registered && (
-          <InfoNote className="mt-2" title="Peça a autorização desta carteira.">
+          <InfoNote className="mt-5" title="Peça a autorização desta carteira.">
             A autoridade precisa autorizar o endereço antes do registro.{" "}
             <button
               type="button"
@@ -122,7 +122,7 @@ export function VoterStatusCard() {
         )}
 
         {registered && (
-          <InfoNote className="mt-2" title="Pronto para votar.">
+          <InfoNote className="mt-5" title="Pronto para votar.">
             Você vota nas eleições criadas depois do registro. Eleições anteriores congelaram a lista
             de eleitores sem você.
           </InfoNote>

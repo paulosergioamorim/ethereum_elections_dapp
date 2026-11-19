@@ -1,4 +1,5 @@
-import { StatCard, StatRow } from "@/components/stat-card";
+import { ClockIcon, InboxIcon, LockOpenIcon } from "lucide-react";
+import { StatCard } from "@/components/stat-card";
 import { useNow } from "@/lib/use-now";
 import { useElectionResults } from "../hooks";
 import { formatCountdown, formatTimestamp, phaseAt, phaseLabels } from "../phase";
@@ -16,9 +17,10 @@ export function ElectionStats({ election }: { election: ElectionDetails }) {
   }[phase];
 
   return (
-    <StatRow>
-      <StatCard label="Fase" value={phaseLabels[phase]} caption={phaseCaption} />
+    <div className="grid gap-4 md:grid-cols-3">
+      <StatCard icon={ClockIcon} label="Fase" value={phaseLabels[phase]} caption={phaseCaption} />
       <StatCard
+        icon={InboxIcon}
         label="Cédulas registradas"
         value={results.data?.total.toString()}
         caption={
@@ -28,10 +30,11 @@ export function ElectionStats({ election }: { election: ElectionDetails }) {
         }
       />
       <StatCard
+        icon={LockOpenIcon}
         label="Cédulas abertas"
         value={results.data?.revealed.toString()}
         caption="Reveladas na apuração"
       />
-    </StatRow>
+    </div>
   );
 }

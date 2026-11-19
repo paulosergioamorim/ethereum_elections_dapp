@@ -61,7 +61,7 @@ export function RegistrationCard() {
       />
 
       <Button
-        className="mt-6 h-11 w-full text-base"
+        className="mt-6 h-10 w-full"
         onClick={() => register.mutate()}
         disabled={!!blockedReason || register.isPending}
       >

@@ -12,15 +12,15 @@ export function SupportingTools() {
         description="As outras peças, em uma linha cada."
       />
 
-      <ul className="divide-y border-t-2 border-foreground">
+      <ul className="divide-y rounded-2xl border bg-card px-5">
         {supportingTools.map((tool) => (
           <li
             key={tool.title}
-            className="grid gap-x-6 gap-y-1 py-3.5 text-sm sm:grid-cols-[9rem_minmax(0,1fr)]"
+            className="grid gap-x-6 gap-y-1 py-4 text-sm sm:grid-cols-[9rem_minmax(0,1fr)]"
           >
-            <p className="font-semibold">{tool.title}</p>
+            <p className="font-medium">{tool.title}</p>
             <div className="space-y-1">
-              <p className="text-muted-foreground">{tool.description}</p>
+              <p className="leading-relaxed text-muted-foreground">{tool.description}</p>
               <p>
                 <ExternalDocLink link={tool.doc} />
               </p>

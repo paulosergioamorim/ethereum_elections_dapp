@@ -38,7 +38,7 @@ function AccountBalance({ address }: { address: Address }) {
  * Conta ativa no cabeçalho e menu para trocar entre as contas já autorizadas.
  * Trocar aqui não abre a carteira: o dApp só passa a assinar com a outra conta.
  */
-export function AccountSwitcher({ className }: { className?: string }) {
+export function AccountSwitcher() {
   const { account, accounts, wallet, selectAccount } = useWallet();
   const connectMore = useConnectMoreAccounts();
   const disconnect = useDisconnect();
@@ -57,10 +57,10 @@ export function AccountSwitcher({ className }: { className?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className={className} aria-label={`Conta ativa: ${account}`}>
+        <Button variant="outline" aria-label={`Conta ativa: ${account}`}>
           <AddressAvatar address={account} className="size-4" />
           <span className="font-mono">{shortAddress(account)}</span>
-          <ChevronDownIcon className="ml-auto text-muted-foreground" />
+          <ChevronDownIcon className="text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
 

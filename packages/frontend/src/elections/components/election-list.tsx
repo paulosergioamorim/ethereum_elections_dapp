@@ -1,8 +1,9 @@
 import { useQueries } from "@tanstack/react-query";
-import { SearchXIcon, TriangleAlertIcon, VoteIcon } from "lucide-react";
+import { ArrowRightIcon, SearchXIcon, TriangleAlertIcon, VoteIcon } from "lucide-react";
 import { Link } from "react-router";
 import type { Address } from "viem";
 import { EmptyState } from "@/components/empty-state";
+import { IconBubble } from "@/components/icon-bubble";
 import { Badge } from "@/components/ui/badge";
 import { shortAddress } from "@/lib/format";
 import { useNow } from "@/lib/use-now";
@@ -84,22 +85,17 @@ export function ElectionList({
   }
 
   return (
-    <ul className="-mt-4 divide-y">
+    <ul className="space-y-2">
       {newestFirst.map(({ address, number, election }) => (
         <li key={address}>
           <Link
             to={`/elections/${address}`}
-            className="group flex items-center gap-4 py-4 outline-none focus-visible:bg-secondary"
+            className="flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-muted"
           >
-            <span
-              aria-hidden
-              className="w-10 shrink-0 font-numeral text-4xl leading-none text-foreground/25 transition-colors group-hover:text-primary"
-            >
-              {String(number).padStart(2, "0")}
-            </span>
+            <IconBubble icon={VoteIcon} />
 
-            <span className="min-w-0 flex-1 space-y-0.5">
-              <span className="block truncate text-base font-semibold underline-offset-4 group-hover:underline">
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">
                 {election?.title ?? `Eleição #${number}`}
               </span>
               <span className="block font-mono text-xs text-muted-foreground">
@@ -112,6 +108,8 @@ export function ElectionList({
                 {phaseLabels[phaseAt(now, election)]}
               </Badge>
             )}
+
+            <ArrowRightIcon className="size-4 text-muted-foreground" />
           </Link>
         </li>
       ))}
