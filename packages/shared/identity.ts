@@ -22,3 +22,8 @@ export function identityMessage(chainId: number, factory: Address): string {
 export function deriveIdentity(signature: Hex): Identity {
   return new Identity(signature);
 }
+
+/** Remonta uma identidade exportada com `identity.export()` (ex.: a que vai da página para o Worker do voto). */
+export function importIdentity(privateKey: string): Identity {
+  return Identity.import(privateKey);
+}

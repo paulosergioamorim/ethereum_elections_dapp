@@ -27,7 +27,7 @@ function value(raw: RawEnv, name: keyof RawEnv): string | undefined {
 }
 
 function invalid(message: string): Error {
-  return new Error(`${message} Veja frontend/.env.example.`);
+  return new Error(`${message} Veja packages/frontend/.env.example.`);
 }
 
 /** Valida e converte as variáveis `VITE_`. Separada de `env` para poder ser testada. */
