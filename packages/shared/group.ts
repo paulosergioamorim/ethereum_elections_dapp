@@ -37,3 +37,8 @@ export function buildGroup(events: readonly MemberEvent[]): Group {
 
   return group;
 }
+
+/** Remonta uma árvore exportada com `group.export()` (ex.: a que vai da página para o Worker do voto). */
+export function importGroup(nodes: string): Group {
+  return Group.import(nodes);
+}

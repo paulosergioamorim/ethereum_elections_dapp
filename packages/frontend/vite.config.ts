@@ -5,6 +5,9 @@ import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { defineConfig } from "vitest/config";
 
+// tlock-js usa o Buffer do Node, na página e nos Workers
+const bufferPolyfill = () => nodePolyfills({ include: ["buffer"], globals: { Buffer: true } });
+
 export default defineConfig({
   // GitHub Pages serve o app num subcaminho (/<repo>/); o workflow define VITE_BASE
   base: process.env.VITE_BASE ?? "/",
@@ -12,9 +15,13 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
-    // tlock-js usa o Buffer do Node
-    nodePolyfills({ include: ["buffer"], globals: { Buffer: true } }),
+    bufferPolyfill(),
   ],
+  // os Workers (tlock e prova Semaphore) têm pipeline de plugins próprio
+  worker: {
+    format: "es",
+    plugins: () => [bufferPolyfill()],
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

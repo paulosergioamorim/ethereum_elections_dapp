@@ -2,7 +2,7 @@ import { commitBallot } from "@elections/shared/ballot";
 import { openBallot, roundTimeMs } from "@elections/shared/timelock";
 import { describe, expect, it, vi } from "vitest";
 import type { CastBallot } from "@/elections/ballots";
-import { openBallots } from "@/elections/tally-crypto";
+import { decryptBallots as openBallots } from "@/elections/crypto/open-ballots";
 
 // o drand de verdade é coberto em test/integration/tally.test.ts (Hardhat); aqui, só a classificação
 vi.mock("@elections/shared/timelock", () => ({
