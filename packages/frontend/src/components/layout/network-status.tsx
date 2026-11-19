@@ -3,28 +3,26 @@ import { formatInteger } from "@/lib/format";
 import { useBlockNumber } from "@/lib/use-block-number";
 import { cn } from "@/lib/utils";
 
-/** Rede do app e último bloco (ponto verde quando o RPC responde). */
-export function NetworkStatus({ className }: { className?: string }) {
+/** Selo ao lado da marca: rede do app e último bloco (verde quando o RPC responde). */
+export function NetworkStatus() {
   const blockNumber = useBlockNumber();
   const state = blockNumber.isError ? "error" : blockNumber.data === undefined ? "loading" : "online";
 
   return (
-    <p className={cn("flex items-baseline gap-2 text-xs text-muted-foreground", className)}>
+    <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs text-muted-foreground">
       <span
         aria-hidden
         className={cn(
-          "size-2 shrink-0 self-center rounded-full",
+          "size-1.5 rounded-full",
           state === "online" && "bg-primary",
           state === "loading" && "animate-pulse bg-muted-foreground/50",
           state === "error" && "bg-destructive",
         )}
       />
-      <span className="font-medium text-foreground">
-        {state === "error" ? "Rede indisponível" : appChain.name}
-      </span>
+      {state === "error" ? "Rede indisponível" : appChain.name}
       {blockNumber.data !== undefined && !blockNumber.isError && (
-        <span className="tabular-nums">bloco {formatInteger(blockNumber.data)}</span>
+        <span className="hidden sm:inline">· bloco {formatInteger(blockNumber.data)}</span>
       )}
-    </p>
+    </span>
   );
 }

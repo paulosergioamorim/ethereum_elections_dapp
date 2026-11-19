@@ -114,7 +114,7 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
 
           {values.candidates.map((candidate, index) => (
             <div key={index} className="flex items-center gap-2">
-              <span aria-hidden className="w-5 shrink-0 text-right font-numeral text-xl leading-none text-primary">
+              <span className="w-5 shrink-0 text-right text-xs text-muted-foreground">
                 {index + 1}
               </span>
               <Input
@@ -185,7 +185,7 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
 
         <Button
           type="submit"
-          className="h-11 w-full text-base"
+          className="h-10 w-full"
           disabled={!!blockedReason || createElection.isPending}
         >
           {createElection.isPending && <Loader2Icon className="animate-spin" />}

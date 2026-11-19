@@ -90,7 +90,7 @@ export function AuthorizeVotersCard({ authorized }: { authorized: readonly Addre
 
         <Button
           type="submit"
-          className="h-11 w-full text-base"
+          className="h-10 w-full"
           disabled={!canAdminister || parsed.toAuthorize.length === 0 || authorize.isPending}
         >
           {authorize.isPending && <Loader2Icon className="animate-spin" />}

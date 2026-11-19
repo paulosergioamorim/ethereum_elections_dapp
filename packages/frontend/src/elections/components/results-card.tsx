@@ -33,7 +33,7 @@ export function ResultsCard({ election }: { election: ElectionDetails }) {
     );
   } else if (!results.data) {
     body = (
-      <p className="py-8 text-sm text-muted-foreground">
+      <p className="py-14 text-center text-sm text-muted-foreground">
         {results.isError ? "Não foi possível ler o resultado." : "Lendo o resultado…"}
       </p>
     );
@@ -46,7 +46,7 @@ export function ResultsCard({ election }: { election: ElectionDetails }) {
 
     body = (
       <>
-        <ul className="space-y-5" aria-label="Resultado publicado">
+        <ul className="space-y-4" aria-label="Resultado publicado">
           {election.candidates.map((candidate, index) => (
             <ResultRow
               key={index}
@@ -78,7 +78,7 @@ export function ResultsCard({ election }: { election: ElectionDetails }) {
         )}
 
         {unrevealed > 0n && (
-          <div className="mt-6 border-t border-dashed pt-6">
+          <div className="mt-5 border-t pt-5">
             <RevealPanel election={election} />
           </div>
         )}

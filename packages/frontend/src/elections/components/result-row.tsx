@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 
-/** Uma linha do boletim: nome, pontilhado até os votos, percentual sobre `base` e a barra. */
+/** Uma linha do resultado: nome, votos, percentual sobre `base` e a barra. */
 export function ResultRow({
   label,
   votes,
@@ -13,24 +13,25 @@ export function ResultRow({
   base: bigint;
   /** Marca o candidato eleito. */
   elected?: boolean;
-  /** Barra em cinza: as outras linhas, quando já há um eleito. */
+  /** Barra apagada: as outras linhas, quando já há um eleito. */
   dimmed?: boolean;
 }) {
   const percent = base > 0n ? Number((votes * 1000n) / base) / 10 : 0;
 
   return (
-    <li className="space-y-2">
-      <div className="flex items-baseline gap-2">
-        <span className="font-semibold">{label}</span>
-        {elected && <Badge className="self-center">Eleito</Badge>}
-        <span aria-hidden className="min-w-4 flex-1 border-b-2 border-dotted border-foreground/25" />
-        <span className="font-numeral text-xl leading-none [word-spacing:0.12em]">
+    <li className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-3 text-sm">
+        <span className="flex items-center gap-2 font-medium">
+          {label}
+          {elected && <Badge>Eleito</Badge>}
+        </span>
+        <span className="text-muted-foreground tabular-nums">
           {votes.toString()} · {percent.toLocaleString("pt-BR")}%
         </span>
       </div>
-      <div className="h-2.5 bg-foreground/8">
+      <div className="h-2 overflow-hidden rounded-full bg-muted">
         <div
-          className={dimmed ? "h-full bg-foreground/35" : "h-full bg-primary"}
+          className={dimmed ? "h-full rounded-full bg-muted-foreground/40" : "h-full rounded-full bg-primary"}
           style={{ width: `${percent}%` }}
         />
       </div>

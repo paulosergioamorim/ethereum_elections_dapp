@@ -1,4 +1,4 @@
-import { Loader2Icon, LockKeyholeIcon } from "lucide-react";
+import { ArrowRightIcon, Loader2Icon, LockKeyholeIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -60,18 +60,19 @@ export function AuthorityGuard({ children }: { children: ReactNode }) {
   return (
     <section
       aria-labelledby="authority-guard-title"
-      className="flex max-w-xl flex-col items-start gap-5"
+      className="mx-auto my-8 flex max-w-xl flex-col items-center gap-4 rounded-2xl border bg-card p-10 text-center"
     >
-      <span className="flex size-12 items-center justify-center rounded bg-primary text-primary-foreground">
+      <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
         <LockKeyholeIcon className="size-6" />
       </span>
-      <h1 id="authority-guard-title" className="font-display text-3xl leading-[1.05] sm:text-4xl">
+      <h1 id="authority-guard-title" className="text-xl font-semibold">
         Área da autoridade eleitoral
       </h1>
-      <p className="leading-relaxed text-muted-foreground">{message}</p>
+      <p className="text-sm leading-relaxed text-muted-foreground">{message}</p>
       {action}
-      <Link to="/" className="text-sm font-medium text-primary underline underline-offset-4">
+      <Link to="/" className="text-sm font-medium text-primary hover:underline">
         Ir para as eleições
+        <ArrowRightIcon className="ml-1 inline size-4" />
       </Link>
     </section>
   );

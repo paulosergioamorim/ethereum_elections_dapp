@@ -11,11 +11,11 @@ export function VoteJourney() {
         description="Do registro à apuração, em quatro etapas."
       />
 
-      <ol className="grid border-y-2 border-foreground max-sm:divide-y sm:grid-cols-2 lg:grid-cols-4 lg:divide-x">
+      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {journey.map((step, index) => (
-          <li key={step.title} className="space-y-1.5 py-4 lg:px-5 lg:first:pl-0 lg:last:pr-0">
-            <span aria-hidden className="block font-numeral text-4xl leading-none text-primary">
-              {index + 1}
+          <li key={step.title} className="flex flex-col gap-3 rounded-2xl border bg-card p-5">
+            <span className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">
+              Etapa {index + 1}
             </span>
             <h3 className="font-semibold">{step.title}</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">{step.description}</p>

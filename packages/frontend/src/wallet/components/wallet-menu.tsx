@@ -5,15 +5,15 @@ import { AccountSwitcher } from "./account-switcher";
 import { ConnectWalletButton } from "./connect-wallet-button";
 
 /**
- * Canto da carteira na navegação: conectar ou mostrar a conta ativa.
+ * Canto da carteira no cabeçalho: conectar ou mostrar a conta ativa.
  * A rede errada é avisada numa faixa abaixo do cabeçalho (`StatusBanners`).
  */
-export function WalletMenu({ className }: { className?: string }) {
+export function WalletMenu() {
   const { status } = useWallet();
 
   if (status === "reconnecting") {
     return (
-      <Button variant="outline" className={className} disabled>
+      <Button variant="outline" disabled>
         <Loader2Icon className="animate-spin" />
         Reconectando…
       </Button>
@@ -21,8 +21,8 @@ export function WalletMenu({ className }: { className?: string }) {
   }
 
   if (status === "disconnected") {
-    return <ConnectWalletButton className={className} />;
+    return <ConnectWalletButton />;
   }
 
-  return <AccountSwitcher className={className} />;
+  return <AccountSwitcher />;
 }

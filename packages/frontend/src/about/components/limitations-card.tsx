@@ -1,4 +1,4 @@
-import { ScaleIcon } from "lucide-react";
+import { ScaleIcon, TriangleAlertIcon } from "lucide-react";
 import { SectionCard } from "@/components/section-card";
 import { limitations } from "../content";
 import { ExternalDocLink } from "./doc-links";
@@ -11,19 +11,22 @@ export function LimitationsCard() {
       title="Premissas e limitações"
       description="O que o sigilo ainda não cobre."
     >
-      <ul className="-mt-4 divide-y">
+      <ul className="space-y-4">
         {limitations.map((item) => (
-          <li key={item.title} className="space-y-1 py-3.5 text-sm">
-            <p className="font-semibold">{item.title}</p>
-            <p className="leading-relaxed text-muted-foreground">
-              {item.description}
+          <li key={item.title} className="flex gap-3">
+            <TriangleAlertIcon
+              aria-hidden
+              className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
+            />
+            <div className="min-w-0 space-y-1 text-sm">
+              <p className="font-medium">{item.title}</p>
+              <p className="leading-relaxed text-muted-foreground">{item.description}</p>
               {item.doc && (
-                <>
-                  {" "}
-                  Veja o <ExternalDocLink link={item.doc} />.
-                </>
+                <p>
+                  <ExternalDocLink link={item.doc} />
+                </p>
               )}
-            </p>
+            </div>
           </li>
         ))}
       </ul>
