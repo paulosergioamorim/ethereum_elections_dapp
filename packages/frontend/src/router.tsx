@@ -25,5 +25,5 @@ export const routes: RouteObject[] = [
   },
 ];
 
-/** SPA em modo data, sem SSR. Na Netlify, o redirect `/* → /index.html` do `netlify.toml` atende as rotas profundas. */
-export const router = createBrowserRouter(routes);
+/** SPA em modo data, sem SSR. No GitHub Pages, o `404.html` (cópia do `index.html`, feita no workflow) atende as rotas profundas. */
+export const router = createBrowserRouter(routes, { basename: import.meta.env.BASE_URL });

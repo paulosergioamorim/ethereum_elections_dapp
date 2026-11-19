@@ -4,12 +4,12 @@
 
 ```
 packages/contracts/   @elections/contracts — Hardhat 3 + viem: Solidity contracts, tests, Ignition modules
-packages/frontend/    @elections/frontend — React + Vite SPA, deployed to Netlify (see netlify.toml)
+packages/frontend/    @elections/frontend — React + Vite SPA, deployed to GitHub Pages (see .github/workflows/deploy.yml)
 packages/shared/      @elections/shared — vote crypto shared by the Hardhat tests and the frontend
 ```
 
 Each package has its own `package.json` and `tsconfig.json`. The root only holds workspace,
-deploy (`netlify.toml`) and tooling (`.fallowrc.json`) config.
+deploy (`.github/workflows/`) and tooling (`.fallowrc.json`) config.
 
 When working in `packages/contracts`, read `packages/contracts/AGENTS.md`.
 

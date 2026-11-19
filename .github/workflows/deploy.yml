@@ -1,0 +1,56 @@
+# Publica o frontend (SPA Vite) no GitHub Pages a cada push na main.
+# Construído a partir da raiz do workspace pnpm, porque o frontend depende de packages/shared.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Configuração pública do app (vai para o bundle). Não ponha chaves de RPC aqui nem em secrets:
+      # tudo que começa com VITE_ fica visível no site.
+      # Settings > Secrets and variables > Actions > Variables
+      VITE_BASE: ${{ vars.VITE_BASE }}
+      VITE_CHAIN_ID: ${{ vars.VITE_CHAIN_ID }}
+      VITE_FACTORY_ADDRESS: ${{ vars.VITE_FACTORY_ADDRESS }}
+      VITE_FACTORY_DEPLOY_BLOCK: ${{ vars.VITE_FACTORY_DEPLOY_BLOCK }}
+      VITE_RPC_HTTP_URL: ${{ vars.VITE_RPC_HTTP_URL }}
+      VITE_RPC_WS_URL: ${{ vars.VITE_RPC_WS_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      # só o frontend e as dependências dele (inclui o shared), sem o Hardhat
+      - run: pnpm install --frozen-lockfile --filter "@elections/frontend..."
+      - run: pnpm --filter @elections/frontend build
+      # o Pages não tem rewrite: o 404.html serve a SPA nas rotas profundas
+      - run: cp packages/frontend/dist/index.html packages/frontend/dist/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

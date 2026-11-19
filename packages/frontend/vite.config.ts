@@ -6,6 +6,8 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // GitHub Pages serve o app num subcaminho (/<repo>/); o workflow define VITE_BASE
+  base: process.env.VITE_BASE ?? "/",
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] }),
