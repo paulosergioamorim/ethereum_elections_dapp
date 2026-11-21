@@ -82,10 +82,20 @@ contract ElectionFactoryCreatePartyTest is ElectionFactoryTestBase {
         Party(impl).initialize(address(1), "Test Party");
     }
 
-    function test_shouldCreateDistinctParties() public {
-        Party a = factory.createParty(address(1), "Test Party");
-        Party b = factory.createParty(address(1), "Test Party");
+    function test_shouldCreateIsolatedParties() public {
+        Party a = factory.createParty(address(1), "Alfa");
+        Party b = factory.createParty(address(2), "Partido Beta");
         assertNotEq(address(a), address(b));
         assertEq(factory.parties().length, 2);
+        assertEq(a.owner(), address(1));
+        assertEq(b.owner(), address(2));
+        assertEq(a.name(), "Alfa");
+        assertEq(b.name(), "Partido Beta");
+
+        vm.deal(address(this), 1 ether);
+        a.donate{value: 1 ether}();
+        assertEq(address(a).balance, 1 ether);
+        assertEq(address(b).balance, 0);
+        assertEq(b.donatedBy(address(this)), 0);
     }
 }

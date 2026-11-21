@@ -2,8 +2,8 @@
 
 **Approved**: 2026-11-21 - user: "aprovado, implemente na worktree e depois realize o merge na main"
 **Settled mid-build:** none
-**Review:** stale - the spec changed after the review at 3366ef1 (Party is now a clone); review again after the rebuild
-**Fix pass:** reset - the earlier pass (criterion 8 test) was against the `new Party` shape; redo after the rebuild
+**Review:** sent at ec64778 - verdict in review.md, no blocking findings
+**Fix pass:** done - criterion 11 test now checks distinct owner/name and balance isolation; criterion 8 stays compile-time enforced (`is IDonatable`); other findings are info, no change
 
 ## Problem
 

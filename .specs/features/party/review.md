@@ -1,35 +1,37 @@
-# Review: Party
+# Review: Party (clone + initialize)
 
-> Stale: written against the `new Party` + constructor shape. The spec now requires an EIP-1167 clone with `initialize` (criteria renumbered to 1-19), so this review must be redone after the rebuild.
+Reviewed `git diff 1192c49..HEAD` (a3c91e6 spec, ec64778 implementation). No screens, so no capture comparison. I changed no code (mutations were reverted with `git checkout`).
 
-Verdict: the request and criteria 1-16 are implemented correctly. `pnpm test:contracts` passes (115: 85 Solidity, 30 Node). One test is weak (criterion 8) and there are two minor notes. No screens, so no capture comparison. I did not mutate the code and changed no data.
+Verdict: the request and the added instruction ("usar Clones e initialize") are implemented correctly. `pnpm test:contracts` passes: 117 (87 Solidity, 30 Node). Criteria 1-19 are covered; two are only partly covered by tests (below). No blocking problems.
 
 ## Request, sentence by sentence
-- "contrato Partido (Party)": `contracts/Party.sol`. Done.
-- "presidente (Ownable2Step)": `Party is IDonatable, Ownable2Step`, constructor `Ownable(president)`. Done.
-- "criado pelo ElectionFactory": `createParty` is `onlyOwner`, does `new Party`, records it in `_parties` and `isParty`, and emits `PartyCreated`. Done.
-- "usuários poderão realizar doações": `donate()` payable, open to anyone, with no `receive` or `fallback`. Done.
-- "presidente pode resgatar o dinheiro": `withdraw(to, amount)` is `onlyOwner`. Done.
-- "método de doação abstraído em classe ou interface abstrata": `IDonatable` declares `donate`, `Donated` and `ZeroDonation`. Done.
+- Party contract with a president (Ownable2Step): `Party is Initializable, IDonatable, Ownable2Step`; `initialize` calls `_transferOwnership(president)`. Done.
+- Created by ElectionFactory: `createParty` is `onlyOwner`, runs `Clones.clone(_partyBase)` then `initialize`, records `_parties` and `isParty`, emits `PartyCreated`. Done.
+- Donations by users: `donate()` payable, no `receive` or `fallback`. Done.
+- President withdraws: `withdraw(to, amount)` is `onlyOwner`. Done.
+- Donation method abstracted: `IDonatable`. Done.
+- "Usar Clones e initialize, assim como packages/contracts usa": same shape as `Election` (immutable base built in the factory, constructor with `_disableInitializers()`, `initializer`). Done.
+
+## Mutation results (each reverted)
+- Remove `_disableInitializers()`: fails `test_shouldLockImplementation` (criterion 10).
+- Remove `_transferOwnership(president)`: fails 9+ tests, including `test_shouldStorePresidentAndName` (criterion 1).
+- Remove `name = _name`: fails `test_shouldStorePresidentAndName` (criterion 1).
+- Remove `initializer` modifier: fails `test_shouldRevertWhenInitializedTwice` and `test_shouldLockImplementation` (criterion 9).
 
 ## Criteria vs tests
-Would the test fail if the rule were wrong? Judged by reading, no mutation run.
-- 1: yes. `ElectionFactoryCreatePartyTest` checks `owner`, `name`, `parties()`, `isParty`, and the emitted address (via `computeCreateAddress`).
-- 2: yes (fuzzed non-owner). 3: yes. 4: yes.
-- 5: yes. It checks `donatedBy`, the balance, the accumulation of 1 and 2 ETH, and the `Donated` event with a fuzzed amount.
-- 6: yes. 7: yes (plain transfer and unknown calldata; the latter also asserts balance 0).
-- 8: WEAK, see problem 1.
-- 9: yes. Partial, full and zero amounts, the event, and `donatedBy` unchanged are all covered.
-- 10: yes (fuzzed). 11: yes (balance+1, with the exact args). 12: yes.
-- 13: yes for the revert. The "balance unchanged" assertion is implied by the revert, so it adds little.
-- 14: yes. 15: yes (it also checks that the new president can withdraw). 16: yes.
+- 1: yes (owner, name, list, isParty, event; the event test reads the recorded log, so it is not tied to CREATE addresses).
+- 2, 3, 4: yes. 5, 6, 7: yes. 8: weak, see problem 2.
+- 9: yes (re-init on a factory clone reverts with `InvalidInitialization`). "owner and name unchanged" is implied by the revert, not asserted.
+- 10: yes. It extracts the implementation from the EIP-1167 bytecode, so it checks the real `_partyBase`.
+- 11: partial, see problem 1.
+- 12-16 (withdraw), 17-19 (handover, renounce): yes. Their setups now use a clone plus `initialize`, so they exercise the clone path.
 
 ## Problems
-1. Low. Criterion 8 ("Party SHALL implement IDonatable") is not really tested. `test_shouldImplementIDonatable` casts `address(party)` to `IDonatable` and calls `donate()`. That passes even if `Party` stops inheriting `IDonatable`, because the selector matches. The tests also take the `Donated` and `ZeroDonation` names from `IDonatable`, and their signatures are the same either way. The inheritance is only enforced by the compiler through `is IDonatable`, and removing it would break no test. Possible fix: assert on `type(IDonatable).interfaceId` through an ERC-165 check, or accept this as compile-time enforced.
-2. Info. The fuzzed `test_shouldRevertWithOnlyOwner` in the withdraw tests does not exclude the test contract or the zero address. That is harmless, since any non-president is expected to revert.
-3. Info. `withdraw` sends ETH with `call` and no reentrancy guard. It is safe: only the president can call it, it holds no state to corrupt, and the event is emitted after the transfer. This needs no change.
+1. Low. Criterion 11 is only partly tested. `test_shouldCreateDistinctParties` checks two different addresses and `parties().length == 2`, with the same president and name for both. It does not check different `owner()`/`name()` per party, balance isolation (donate to one, other stays 0), or that neither address equals the implementation. Suggested fix: create "Alfa"/A and "Partido Beta"/B, donate to one, assert owners, names, balances and `address != impl`.
+2. Low (carried over from the old review). Criterion 8 (`Party` implements `IDonatable`) has no test that fails if `is IDonatable` is dropped; `test_shouldImplementIDonatable` only calls `donate()` by selector. The compiler enforces it through `is IDonatable`; accept it or add an interfaceId-style check.
+3. Info. `initialize` does not reject `president == address(0)`; only the factory does. Safe in practice: the factory clones and initializes in one transaction and re-init is blocked.
+4. Info. `constructor() Ownable(msg.sender)` gives the implementation an owner (the factory). Harmless: the implementation is locked and clone storage is separate. It matches the plan's stated choice.
 
-## Not checked or out of scope
-- Frontend, ABI export and Ignition: out of scope in the plan, and unchanged in the diff.
-- Deployed size of the factory is about 12.4 KB unoptimised, under the 24 KB limit.
-- Spec assumptions (non-clone, zero withdraw allowed, renounce disabled) match the code.
+## Checked and fine
+- `pnpm export-abis` produces no diff against the committed `abis.ts`.
+- No remaining `new Party(` calls in the repository.
