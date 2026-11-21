@@ -1,6 +1,6 @@
 import { BaseError, ContractFunctionRevertedError, encodeErrorResult } from "viem";
 import { describe, expect, it } from "vitest";
-import { electionAbi, electionFactoryAbi, semaphoreAbi } from "@/contracts";
+import { electionAbi, electionFactoryAbi, partyAbi, semaphoreAbi } from "@/contracts";
 import { contractErrorName } from "@/contracts/errors";
 import { errorMessage } from "@/lib/errors";
 import { alice } from "../helpers/mock-wallet";
@@ -36,6 +36,49 @@ describe("contractErrorName", () => {
     );
 
     expect(contractErrorName(error)).toBe("WrongSiblingNodes");
+  });
+
+  it.each(["InvalidPresident", "EmptyPartyName"] as const)(
+    "should read %s from createParty and translate it",
+    (errorName) => {
+      const error = factoryRevert(encodeErrorResult({ abi: electionFactoryAbi, errorName }), "createParty");
+
+      expect(contractErrorName(error)).toBe(errorName);
+      expect(errorMessage(error)).not.toBe(errorName);
+    },
+  );
+
+  it.each([
+    ["InvalidPresident", "O presidente não pode ser o endereço zero."],
+    ["EmptyPartyName", "Informe o nome do partido."],
+  ] as const)("should show %s as the Portuguese message", (errorName, message) => {
+    const error = factoryRevert(encodeErrorResult({ abi: electionFactoryAbi, errorName }), "createParty");
+
+    expect(errorMessage(error)).toBe(message);
+  });
+
+  it.each(["ZeroDonation", "InvalidRecipient", "WithdrawFailed"] as const)(
+    "should read the Party error %s",
+    (errorName) => {
+      const error = new ContractFunctionRevertedError({
+        abi: partyAbi,
+        data: encodeErrorResult({ abi: partyAbi, errorName }),
+        functionName: "donate",
+      });
+
+      expect(contractErrorName(error)).toBe(errorName);
+      expect(errorMessage(error)).not.toBe(errorName);
+    },
+  );
+
+  it("should read InsufficientBalance with its arguments", () => {
+    const error = new ContractFunctionRevertedError({
+      abi: partyAbi,
+      data: encodeErrorResult({ abi: partyAbi, errorName: "InsufficientBalance", args: [1n, 2n] }),
+      functionName: "withdraw",
+    });
+
+    expect(contractErrorName(error)).toBe("InsufficientBalance");
   });
 
   it("should ignore errors that did not come from a contract", () => {

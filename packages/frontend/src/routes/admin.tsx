@@ -3,6 +3,7 @@ import {
   AuthorityGuard,
   AuthorizeVotersCard,
   CreateElectionCard,
+  CreatePartyCard,
   VotersCard,
 } from "@/authority";
 import { PageHeader } from "@/components/page-header";
@@ -29,7 +30,7 @@ function AuthorityPanel() {
       <PageHeader
         eyebrow="Autoridade"
         title="Autoridade eleitoral"
-        description="Autorize carteiras, acompanhe os registros e crie eleições."
+        description="Autorize carteiras, acompanhe os registros e crie eleições e partidos."
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -57,6 +58,7 @@ function AuthorityPanel() {
         <div className="space-y-6">
           <AuthorizeVotersCard authorized={voters.data?.map((voter) => voter.address)} />
           <CreateElectionCard registeredVoters={registered} />
+          <CreatePartyCard />
         </div>
 
         <VotersCard />

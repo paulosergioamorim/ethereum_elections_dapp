@@ -7,6 +7,7 @@ import { NetworkStatus } from "./network-status";
 
 const links = [
   { to: "/", label: "Eleições", end: true },
+  { to: "/parties", label: "Partidos", end: false },
   { to: "/register", label: "Registro", end: false },
   { to: "/about", label: "Sobre", end: false },
 ];

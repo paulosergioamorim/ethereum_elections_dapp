@@ -4,6 +4,7 @@ pragma solidity ^0.8.34;
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Election} from "./Election.sol";
+import {Party} from "./Party.sol";
 import {CreateElectionCommand, IElectionSemaphore} from "./Types.sol";
 
 contract ElectionFactory is Ownable {
@@ -11,7 +12,9 @@ contract ElectionFactory is Ownable {
     uint256 private constant MERKLE_TREE_DURATION = type(uint64).max;
 
     address private immutable _base = address(new Election());
+    address private immutable _partyBase = address(new Party());
     Election[] private _elections;
+    Party[] private _parties;
 
     modifier onlyAuthorizedVoter() {
         if (!isAuthorized[msg.sender]) {
@@ -31,9 +34,11 @@ contract ElectionFactory is Ownable {
     mapping(address => bool) public isAuthorized;
     mapping(address => uint256) public commitmentOf;
     mapping(address => bool) public isElection;
+    mapping(address => bool) public isParty;
     uint256 public immutable groupId;
 
     event ElectionCreated(address indexed election);
+    event PartyCreated(address indexed party);
     event VoterAuthorized(address indexed voter);
     event VoterRemoved(address indexed voter);
     event IdentityRegistered(address indexed voter, uint256 commitment);
@@ -43,6 +48,8 @@ contract ElectionFactory is Ownable {
     error CommitmentCannotBeZero();
     error UnauthorizedVoter();
     error RenounceDisabled();
+    error InvalidPresident();
+    error EmptyPartyName();
 
     function addAuthorizedVoters(address[] calldata voters) external onlyOwner {
         for (uint256 i = 0; i < voters.length; ++i) {
@@ -104,6 +111,29 @@ contract ElectionFactory is Ownable {
         _elections.push(election);
         isElection[addr] = true;
         emit ElectionCreated(addr);
+    }
+
+    function createParty(
+        address president,
+        string calldata name
+    ) external onlyOwner returns (Party party) {
+        if (president == address(0)) {
+            revert InvalidPresident();
+        }
+
+        if (bytes(name).length == 0) {
+            revert EmptyPartyName();
+        }
+
+        party = Party(Clones.clone(_partyBase));
+        party.initialize(president, name);
+        _parties.push(party);
+        isParty[address(party)] = true;
+        emit PartyCreated(address(party));
+    }
+
+    function parties() external view returns (Party[] memory) {
+        return _parties;
     }
 
     function elections() external view returns (Election[] memory) {

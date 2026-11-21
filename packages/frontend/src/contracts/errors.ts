@@ -1,5 +1,5 @@
 import { BaseError, ContractFunctionRevertedError, decodeErrorResult, type Hex } from "viem";
-import { electionAbi, electionFactoryAbi, semaphoreAbi } from "./abis";
+import { electionAbi, electionFactoryAbi, partyAbi, semaphoreAbi } from "./abis";
 
 /** Erros dos contratos em português, para o usuário entender o que fazer. */
 const messages: Record<string, string> = {
@@ -10,6 +10,13 @@ const messages: Record<string, string> = {
   CommitmentCannotBeZero: "A identidade do eleitor é inválida.",
   AlreadyRegisteredIdentityCommitment: "Esta carteira já registrou uma identidade.",
   RenounceDisabled: "A factory não pode ficar sem dono.",
+  // Party e criação de partidos
+  InvalidPresident: "O presidente não pode ser o endereço zero.",
+  EmptyPartyName: "Informe o nome do partido.",
+  ZeroDonation: "A doação precisa ser maior que zero.",
+  InvalidRecipient: "O destino do saque não pode ser o endereço zero.",
+  InsufficientBalance: "O partido não tem saldo suficiente para este saque.",
+  WithdrawFailed: "O destino recusou o saque. Tente outro endereço.",
   // Election
   InvalidMerkleRoot:
     "Ainda não há eleitores registrados. Registre pelo menos um antes de criar a eleição.",
@@ -56,7 +63,7 @@ export function contractErrorName(error: unknown): string | undefined {
     return undefined;
   }
 
-  for (const abi of [electionFactoryAbi, electionAbi, semaphoreAbi]) {
+  for (const abi of [electionFactoryAbi, electionAbi, partyAbi, semaphoreAbi]) {
     try {
       return decodeErrorResult({ abi, data: raw }).errorName;
     } catch {

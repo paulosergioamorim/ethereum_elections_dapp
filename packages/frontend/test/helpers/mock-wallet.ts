@@ -23,7 +23,7 @@ export type MockWallet = {
   /** Métodos JSON-RPC recebidos, em ordem. */
   calls: string[];
   /** Transações que a carteira "assinou e enviou" (`eth_sendTransaction`), em ordem. */
-  transactions: { from: string; to: string; data: Hex }[];
+  transactions: { from: string; to: string; data: Hex; value?: Hex }[];
   /** Simula o usuário trocando de conta ou de permissões dentro da carteira. */
   setAccounts(accounts: Address[]): void;
   /** Anuncia a carteira de novo (EIP-6963). */
@@ -90,7 +90,7 @@ export function createMockWallet({
           return testAccount(address).signMessage({ message: { raw: data } });
         }
         case "eth_sendTransaction": {
-          const [transaction] = params as [{ from: string; to: string; data: Hex }];
+          const [transaction] = params as [MockWallet["transactions"][number]];
           transactions.push(transaction);
           // hash fictício, um por transação
           return `0x${transactions.length.toString(16).padStart(64, "0")}`;
