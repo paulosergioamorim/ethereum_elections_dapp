@@ -51,7 +51,7 @@ abstract contract ElectionFactoryTestBase is Test {
         _;
     }
 
-    function setUp() public {
+    function setUp() public virtual {
         sem = new MockSemaphore();
         factory = new ElectionFactory(sem);
         owner = factory.owner();

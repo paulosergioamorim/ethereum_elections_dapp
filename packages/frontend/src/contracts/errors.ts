@@ -1,5 +1,5 @@
 import { BaseError, ContractFunctionRevertedError, decodeErrorResult, type Hex } from "viem";
-import { candidateAbi, electionAbi, electionFactoryAbi, partyAbi, semaphoreAbi } from "./abis";
+import { candidacyAbi, candidateAbi, electionAbi, electionFactoryAbi, partyAbi, semaphoreAbi } from "./abis";
 
 /** Erros dos contratos em português, para o usuário entender o que fazer. */
 const messages: Record<string, string> = {
@@ -20,12 +20,22 @@ const messages: Record<string, string> = {
   InvalidRecipient: "O destino do saque não pode ser o endereço zero.",
   InsufficientBalance: "O saldo não é suficiente para este saque.",
   WithdrawFailed: "O destino recusou o saque. Tente outro endereço.",
+  // Indicação de candidatos (factory e candidaturas)
+  UnknownElection: "Esta eleição não pertence à factory.",
+  UnknownParty: "Este partido não pertence à factory.",
+  UnknownCandidate: "Este candidato não foi criado por um partido da factory.",
+  NotPartyPresident: "Só o presidente do partido pode indicar ou retirar o candidato.",
+  AlreadyNominated: "Este candidato já é o indicado do partido nesta eleição.",
+  NotNominated: "O partido não tem candidato indicado nesta eleição.",
+  CandidateBusy: "Este candidato já concorre em outra eleição que ainda não entrou em apuração.",
+  NominationInactive: "A indicação foi retirada: esta candidatura não aceita mais doações.",
   // Election
   InvalidMerkleRoot:
     "Ainda não há eleitores registrados. Registre pelo menos um antes de criar a eleição.",
   InvalidVotingStart: "O início da votação já passou. Escolha um horário no futuro.",
   InvalidVotingDuration: "O fim da votação precisa ser depois do início.",
-  InvalidCandidatesQuantity: "A eleição precisa de pelo menos 2 candidatos.",
+  InvalidNominationEnd:
+    "O fim das indicações precisa ser no futuro e não pode passar do início da votação.",
   InvalidInitialization: "Esta eleição já foi inicializada.",
   InvalidPhase: "A eleição não está na fase certa para isso.",
   MerkleRootMismatch: "A lista de eleitores usada na prova não é a desta eleição.",
@@ -66,7 +76,7 @@ export function contractErrorName(error: unknown): string | undefined {
     return undefined;
   }
 
-  for (const abi of [electionFactoryAbi, electionAbi, partyAbi, candidateAbi, semaphoreAbi]) {
+  for (const abi of [electionFactoryAbi, electionAbi, partyAbi, candidateAbi, candidacyAbi, semaphoreAbi]) {
     try {
       return decodeErrorResult({ abi, data: raw }).errorName;
     } catch {

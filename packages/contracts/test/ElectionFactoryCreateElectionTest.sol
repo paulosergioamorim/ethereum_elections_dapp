@@ -98,7 +98,8 @@ contract ElectionFactoryCreateElectionTest is ElectionFactoryTestBase {
         Election election = factory.createElection(ElectionTestLib.validCommand());
         CreateElectionCommand memory command = ElectionTestLib.validCommand();
         assertEq(election.title(), command.title);
-        assertEq(election.candidates(), command.candidates);
+        assertEq(election.nominationEnd(), command.nominationEnd);
+        assertEq(address(election.factory()), address(factory));
         assertEq(election.votingStart(), command.votingStart);
         assertEq(election.votingEnd(), command.votingEnd);
     }

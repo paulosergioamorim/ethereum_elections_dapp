@@ -9,15 +9,11 @@ library ElectionTestLib {
     /// @dev Comando que passa em todas as validações do `initialize`, com datas relativas ao
     /// `block.timestamp` atual para continuar válido depois de qualquer `vm.warp`.
     function validCommand() internal view returns (CreateElectionCommand memory) {
-        string[] memory candidates = new string[](2);
-        candidates[0] = "Candidato A";
-        candidates[1] = "Candidato B";
-
         return
             CreateElectionCommand(
                 unicode"Eleição 2026",
-                candidates,
                 uint64(block.timestamp + 1),
+                uint64(block.timestamp + 2),
                 uint64(block.timestamp + 1 days)
             );
     }

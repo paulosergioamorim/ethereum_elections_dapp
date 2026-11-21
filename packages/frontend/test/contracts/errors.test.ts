@@ -1,6 +1,6 @@
 import { BaseError, ContractFunctionRevertedError, encodeErrorResult } from "viem";
 import { describe, expect, it } from "vitest";
-import { candidateAbi, electionAbi, electionFactoryAbi, partyAbi, semaphoreAbi } from "@/contracts";
+import { candidacyAbi, candidateAbi, electionAbi, electionFactoryAbi, partyAbi, semaphoreAbi } from "@/contracts";
 import { contractErrorName } from "@/contracts/errors";
 import { errorMessage } from "@/lib/errors";
 import { alice } from "../helpers/mock-wallet";
@@ -95,6 +95,52 @@ describe("contractErrorName", () => {
     });
 
     expect(contractErrorName(error)).toBe("InsufficientBalance");
+  });
+
+  it.each([
+    ["UnknownElection", "Esta eleição não pertence à factory."],
+    ["UnknownParty", "Este partido não pertence à factory."],
+    ["UnknownCandidate", "Este candidato não foi criado por um partido da factory."],
+    ["NotPartyPresident", "Só o presidente do partido pode indicar ou retirar o candidato."],
+    ["AlreadyNominated", "Este candidato já é o indicado do partido nesta eleição."],
+    ["NotNominated", "O partido não tem candidato indicado nesta eleição."],
+  ] as const)("should show the factory error %s as the Portuguese message", (errorName, message) => {
+    const error = factoryRevert(encodeErrorResult({ abi: electionFactoryAbi, errorName }), "nominate");
+
+    expect(contractErrorName(error)).toBe(errorName);
+    expect(errorMessage(error)).toBe(message);
+  });
+
+  it("should show CandidateBusy with the election that holds the candidate", () => {
+    const error = factoryRevert(
+      encodeErrorResult({ abi: electionFactoryAbi, errorName: "CandidateBusy", args: [alice] }),
+      "nominate",
+    );
+
+    expect(contractErrorName(error)).toBe("CandidateBusy");
+    expect(errorMessage(error)).toBe(
+      "Este candidato já concorre em outra eleição que ainda não entrou em apuração.",
+    );
+  });
+
+  it("should decode InvalidNominationEnd, raised by the Election, as the Portuguese message", () => {
+    const error = factoryRevert(encodeErrorResult({ abi: electionAbi, errorName: "InvalidNominationEnd" }));
+
+    expect(contractErrorName(error)).toBe("InvalidNominationEnd");
+    expect(errorMessage(error)).toBe(
+      "O fim das indicações precisa ser no futuro e não pode passar do início da votação.",
+    );
+  });
+
+  it("should decode NominationInactive from a Candidacy donate as the Portuguese message", () => {
+    const error = new ContractFunctionRevertedError({
+      abi: candidacyAbi,
+      data: encodeErrorResult({ abi: candidacyAbi, errorName: "NominationInactive" }),
+      functionName: "donate",
+    });
+
+    expect(contractErrorName(error)).toBe("NominationInactive");
+    expect(errorMessage(error)).toBe("A indicação foi retirada: esta candidatura não aceita mais doações.");
   });
 
   it("should ignore errors that did not come from a contract", () => {

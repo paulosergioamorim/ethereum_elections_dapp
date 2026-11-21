@@ -7,11 +7,31 @@ import {ElectionTestBase} from "./ElectionTestBase.sol";
 import {ISemaphore} from "@semaphore-protocol/contracts/interfaces/ISemaphore.sol";
 
 contract ElectionVoteTest is ElectionTestBase {
-    function test_shouldRevertWithInvalidPhaseWhenScheduled(
+    function test_shouldRevertWithInvalidPhaseWhenNomination(
         uint256 nullifier,
         bytes32 commitment,
         bytes calldata ciphertext
     ) public initialized {
+        IElectionSemaphore.SemaphoreProof memory proof = _validProof(
+            nullifier,
+            commitment,
+            ciphertext
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Election.InvalidPhase.selector,
+                ElectionPhase.Nomination,
+                ElectionPhase.Voting
+            )
+        );
+        election.vote(proof, commitment, ciphertext);
+    }
+
+    function test_shouldRevertWithInvalidPhaseWhenScheduled(
+        uint256 nullifier,
+        bytes32 commitment,
+        bytes calldata ciphertext
+    ) public initialized inScheduled {
         IElectionSemaphore.SemaphoreProof memory proof = _validProof(
             nullifier,
             commitment,

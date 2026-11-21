@@ -83,17 +83,22 @@ export async function registerVoters(
   return voters;
 }
 
-/** Cria uma eleição com 2 candidatos começando em `start` e terminando em `end` (segundos da chain). */
+/**
+ * Cria uma eleição começando em `start` e terminando em `end` (segundos da chain), com a indicação
+ * aberta até `nominationEnd` (por padrão, `start - 30`), e indica 2 candidatos de 2 partidos
+ * (opções 0 e 1). A autoridade (conta 0) é o presidente dos dois partidos.
+ */
 export async function createElection(
   viem: HardhatViemHelpers,
   factory: ElectionFactory,
-  { start, end }: { start: bigint; end: bigint },
+  { start, end, nominationEnd }: { start: bigint; end: bigint; nominationEnd?: bigint },
 ): Promise<Election> {
   const publicClient = await viem.getPublicClient();
+  const wallets = await viem.getWalletClients();
   const hash = await factory.write.createElection([
     {
       title: "Eleição de teste",
-      candidates: ["Candidato A", "Candidato B"],
+      nominationEnd: nominationEnd ?? start - 30n,
       votingStart: start,
       votingEnd: end,
     },
@@ -101,8 +106,54 @@ export async function createElection(
   await publicClient.waitForTransactionReceipt({ hash });
 
   const elections = await factory.read.elections();
+  const election = await viem.getContractAt("Election", elections[elections.length - 1]);
 
-  return viem.getContractAt("Election", elections[elections.length - 1]);
+  for (const [index, name] of ["Alfa", "Beta"].entries()) {
+    const party = await createParty(viem, factory, wallets[0].account.address, `Partido ${name}`);
+    const candidate = await createCandidate(
+      viem,
+      party,
+      wallets[7 + index].account.address,
+      `Candidato ${name}`,
+    );
+    await publicClient.waitForTransactionReceipt({
+      hash: await factory.write.nominate([election.address, candidate.address]),
+    });
+  }
+
+  return election;
+}
+
+async function createParty(
+  viem: HardhatViemHelpers,
+  factory: ElectionFactory,
+  president: Address,
+  name: string,
+) {
+  const publicClient = await viem.getPublicClient();
+  const before = await factory.read.parties();
+  await publicClient.waitForTransactionReceipt({
+    hash: await factory.write.createParty([president, name]),
+  });
+  const parties = await factory.read.parties();
+
+  return viem.getContractAt("Party", parties[before.length]);
+}
+
+async function createCandidate(
+  viem: HardhatViemHelpers,
+  party: ContractReturnType<"Party">,
+  wallet: Address,
+  name: string,
+) {
+  const publicClient = await viem.getPublicClient();
+  const before = await party.read.candidates();
+  await publicClient.waitForTransactionReceipt({
+    hash: await party.write.createCandidate([wallet, name]),
+  });
+  const candidates = await party.read.candidates();
+
+  return viem.getContractAt("Candidate", candidates[before.length]);
 }
 
 /** Eventos de membros do grupo da factory, na ordem da chain, no formato de `buildGroup`. */

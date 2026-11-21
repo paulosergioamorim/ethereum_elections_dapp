@@ -5,6 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Election} from "../contracts/Election.sol";
 import {MockSemaphore} from "../contracts/mocks/MockSemaphore.sol";
+import {MockNominees} from "../contracts/mocks/MockNominees.sol";
+import {Candidacy} from "../contracts/Candidacy.sol";
 import {IElectionSemaphore} from "../contracts/Types.sol";
 import {ElectionTestLib} from "./ElectionTestLib.sol";
 
@@ -15,6 +17,8 @@ import {ElectionTestLib} from "./ElectionTestLib.sol";
 abstract contract ElectionTestBase is Test {
     Election election;
     MockSemaphore sem;
+    /// @dev Fonte dos indicados: duas candidaturas de mentira, a opção 0 e a 1.
+    MockNominees nominees;
     uint256 groupId;
     uint256 merkleTreeRoot;
     uint256 private _nextNullifier;
@@ -25,8 +29,16 @@ abstract contract ElectionTestBase is Test {
             sem,
             groupId,
             merkleTreeRoot,
+            nominees,
             ElectionTestLib.validCommand()
         );
+
+        _;
+    }
+
+    /// @dev Avança para o primeiro instante depois da indicação. Use depois de `initialized`.
+    modifier inScheduled() {
+        vm.warp(election.nominationEnd());
 
         _;
     }
@@ -48,6 +60,11 @@ abstract contract ElectionTestBase is Test {
     function setUp() public {
         sem = new MockSemaphore();
         groupId = sem.createGroup(address(this), type(uint64).max);
+        nominees = new MockNominees();
+        Candidacy[] memory list = new Candidacy[](2);
+        list[0] = Candidacy(address(0xA1));
+        list[1] = Candidacy(address(0xA2));
+        nominees.set(list);
         sem.addMember(groupId, 1);
         merkleTreeRoot = sem.getMerkleTreeRoot(groupId);
         election = Election(Clones.clone(address(new Election())));

@@ -1,20 +1,48 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
-import {ElectionPhase} from "../contracts/Types.sol";
+import {CreateElectionCommand, ElectionPhase} from "../contracts/Types.sol";
+import {ElectionTestLib} from "./ElectionTestLib.sol";
 import {ElectionTestBase} from "./ElectionTestBase.sol";
 
 contract ElectionPhaseTest is ElectionTestBase {
-    function test_shouldBeScheduledBeforeVotingStart(
+    function test_shouldBeNominationBeforeNominationEnd(
         uint256 timestamp
     ) public initialized {
         timestamp = bound(
             timestamp,
             block.timestamp,
+            election.nominationEnd() - 1
+        );
+        vm.warp(timestamp);
+        assertTrue(election.phase() == ElectionPhase.Nomination);
+    }
+
+    function test_shouldBeScheduledAtNominationEnd() public initialized {
+        vm.warp(election.nominationEnd());
+        assertTrue(election.phase() == ElectionPhase.Scheduled);
+    }
+
+    function test_shouldBeScheduledBeforeVotingStart(
+        uint256 timestamp
+    ) public initialized {
+        timestamp = bound(
+            timestamp,
+            election.nominationEnd(),
             election.votingStart() - 1
         );
         vm.warp(timestamp);
         assertTrue(election.phase() == ElectionPhase.Scheduled);
+    }
+
+    function test_shouldSkipScheduledWhenNominationEndsAtVotingStart() public {
+        CreateElectionCommand memory command = ElectionTestLib.validCommand();
+        command.nominationEnd = command.votingStart;
+        election.initialize(sem, groupId, merkleTreeRoot, nominees, command);
+        vm.warp(command.votingStart - 1);
+        assertTrue(election.phase() == ElectionPhase.Nomination);
+        vm.warp(command.votingStart);
+        assertTrue(election.phase() == ElectionPhase.Voting);
     }
 
     function test_shouldBeVotingAtVotingStart() public initialized {

@@ -3,16 +3,34 @@ pragma solidity ^0.8.34;
 
 import {stdError} from "forge-std/StdError.sol";
 import {Election} from "../contracts/Election.sol";
+import {Candidacy} from "../contracts/Candidacy.sol";
+import {ElectionTestLib} from "./ElectionTestLib.sol";
 import {ElectionPhase} from "../contracts/Types.sol";
 import {ElectionTestBase} from "./ElectionTestBase.sol";
 
 /// @dev Preparação comum: `_castVote(option, salt)` e depois `vm.warp(election.votingEnd())`.
 /// Os testes de revert de fase e de entrada não precisam de voto.
 contract ElectionRevealBatchTest is ElectionTestBase {
-    // arrays vazios, sem warp → InvalidPhase(Scheduled, Tally)
+    // arrays vazios, sem warp → InvalidPhase(Nomination, Tally)
+    function test_shouldRevertWithInvalidPhaseWhenNomination()
+        public
+        initialized
+    {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Election.InvalidPhase.selector,
+                ElectionPhase.Nomination,
+                ElectionPhase.Tally
+            )
+        );
+        election.revealBatch(new uint256[](0), new uint256[](0), new bytes32[](0));
+    }
+
+    // arrays vazios, depois de nominationEnd → InvalidPhase(Scheduled, Tally)
     function test_shouldRevertWithInvalidPhaseWhenScheduled()
         public
         initialized
+        inScheduled
     {
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -174,6 +192,25 @@ contract ElectionRevealBatchTest is ElectionTestBase {
         option = bound(option, election.candidates().length, type(uint256).max);
         _castAndReveal(option, salt);
         (, uint256 nullVotes, ) = election.results();
+        assertEq(nullVotes, 1);
+    }
+
+    // sem indicados, toda opção é voto nulo e o tally é vazio
+    function test_shouldCountEveryVoteAsNullWithoutNominees(
+        uint256 option,
+        bytes32 salt
+    ) public {
+        nominees.set(new Candidacy[](0));
+        election.initialize(
+            sem,
+            groupId,
+            merkleTreeRoot,
+            nominees,
+            ElectionTestLib.validCommand()
+        );
+        _castAndReveal(option, salt);
+        (uint256[] memory tally, uint256 nullVotes, ) = election.results();
+        assertEq(tally.length, 0);
         assertEq(nullVotes, 1);
     }
 

@@ -5,7 +5,7 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 import {Ownable, Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IDonatable} from "./IDonatable.sol";
 
-/// @dev Doações e saque compartilhados por `Party` e `Candidate`. O `owner()`
+/// @dev Doações e saque compartilhados por `Party`, `Candidate` e `Candidacy`. O `owner()`
 /// saca. Sem `receive` nem `fallback`: só `donate()` aceita ETH. Os dois
 /// contratos são clones EIP-1167 configurados por `initialize`.
 abstract contract DonationHolder is Initializable, IDonatable, Ownable2Step {
@@ -23,7 +23,11 @@ abstract contract DonationHolder is Initializable, IDonatable, Ownable2Step {
         _disableInitializers();
     }
 
-    function donate() external payable {
+    function donate() external payable virtual {
+        _donate();
+    }
+
+    function _donate() internal {
         if (msg.value == 0) {
             revert ZeroDonation();
         }

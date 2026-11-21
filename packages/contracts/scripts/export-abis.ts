@@ -8,6 +8,7 @@ const contracts = [
   { name: "electionAbi", artifact: "artifacts/contracts/Election.sol/Election.json" },
   { name: "partyAbi", artifact: "artifacts/contracts/Party.sol/Party.json" },
   { name: "candidateAbi", artifact: "artifacts/contracts/Candidate.sol/Candidate.json" },
+  { name: "candidacyAbi", artifact: "artifacts/contracts/Candidacy.sol/Candidacy.json" },
   // eventos do grupo (MemberAdded/MemberRemoved) e erros do LeanIMT
   { name: "semaphoreAbi", artifact: "artifacts/@semaphore-protocol/contracts/Semaphore.sol/Semaphore.json" },
 ];

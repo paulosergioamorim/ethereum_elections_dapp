@@ -2,10 +2,10 @@
 pragma solidity ^0.8.34;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import {CreateElectionCommand, ElectionPhase, IElectionSemaphore} from "./Types.sol";
+import {CreateElectionCommand, ElectionPhase, IElectionSemaphore, INominees} from "./Types.sol";
+import {Candidacy} from "./Candidacy.sol";
 
 contract Election is Initializable {
-    string[] private _candidates;
     bytes32[] private _commitments;
 
     modifier onlyValidDataInitializer(
@@ -29,8 +29,11 @@ contract Election is Initializable {
             revert InvalidVotingDuration();
         }
 
-        if (command.candidates.length <= 1) {
-            revert InvalidCandidatesQuantity();
+        if (
+            command.nominationEnd <= block.timestamp ||
+            command.nominationEnd > command.votingStart
+        ) {
+            revert InvalidNominationEnd();
         }
 
         _;
@@ -48,16 +51,18 @@ contract Election is Initializable {
     }
 
     IElectionSemaphore sem;
+    INominees public factory;
     mapping(uint256 index => bool) public isRevealed;
     string public title;
     uint256 public groupId;
     uint256 public merkleTreeRoot;
+    uint64 public nominationEnd;
     uint64 public votingStart;
     uint64 public votingEnd;
     uint256 public nullVotes;
     uint256 public revealedCount;
     uint64 public createdAtBlock;
-    uint256[] private _tally;
+    mapping(uint256 option => uint256) private _votes;
 
     event VoteCast(
         uint256 indexed nullifier,
@@ -71,7 +76,7 @@ contract Election is Initializable {
     error InvalidMerkleRoot();
     error InvalidVotingDuration();
     error InvalidVotingStart();
-    error InvalidCandidatesQuantity();
+    error InvalidNominationEnd();
     error InvalidPhase(ElectionPhase current, ElectionPhase expected);
     error InvalidReveal(uint256 index);
     error LengthMismatch();
@@ -83,6 +88,7 @@ contract Election is Initializable {
         IElectionSemaphore _sem,
         uint256 _groupId,
         uint256 _merkleTreeRoot,
+        INominees _factory,
         CreateElectionCommand calldata command
     )
         external
@@ -91,15 +97,12 @@ contract Election is Initializable {
     {
         createdAtBlock = uint64(block.number);
         sem = _sem;
+        factory = _factory;
         groupId = _groupId;
         merkleTreeRoot = _merkleTreeRoot;
         title = command.title;
 
-        for (uint256 i = 0; i < command.candidates.length; ++i) {
-            _candidates.push(command.candidates[i]);
-            _tally.push(0);
-        } // Copying nested calldata dynamic arrays to storage is not implemented in the old code generator
-
+        nominationEnd = command.nominationEnd;
         votingStart = command.votingStart;
         votingEnd = command.votingEnd;
     }
@@ -147,6 +150,8 @@ contract Election is Initializable {
             revert LengthMismatch();
         }
 
+        uint256 nominees = candidates().length;
+
         for (uint256 i = 0; i < indexes.length; ++i) {
             uint256 idx = indexes[i];
 
@@ -163,8 +168,8 @@ contract Election is Initializable {
             isRevealed[idx] = true;
             ++revealedCount;
 
-            if (options[i] < _tally.length) {
-                ++_tally[options[i]];
+            if (options[i] < nominees) {
+                ++_votes[options[i]];
             } else {
                 ++nullVotes;
             }
@@ -176,13 +181,23 @@ contract Election is Initializable {
     function results()
         external
         view
-        returns (uint256[] memory, uint256, uint256)
+        returns (uint256[] memory tally, uint256, uint256)
     {
-        return (_tally, nullVotes, _commitments.length - revealedCount);
+        tally = new uint256[](candidates().length);
+
+        for (uint256 i = 0; i < tally.length; ++i) {
+            tally[i] = _votes[i];
+        }
+
+        return (tally, nullVotes, _commitments.length - revealedCount);
     }
 
     function phase() public view returns (ElectionPhase) {
         uint256 timestamp = block.timestamp;
+
+        if (timestamp < nominationEnd) {
+            return ElectionPhase.Nomination;
+        }
 
         if (timestamp < votingStart) {
             return ElectionPhase.Scheduled;
@@ -195,7 +210,8 @@ contract Election is Initializable {
         return ElectionPhase.Voting;
     }
 
-    function candidates() external view returns (string[] memory) {
-        return _candidates;
+    /// @dev Os indicados, na ordem do voto: a opção `i` é `candidates()[i]`. Congelada depois de `nominationEnd`.
+    function candidates() public view returns (Candidacy[] memory) {
+        return factory.nomineesOf(address(this));
     }
 }

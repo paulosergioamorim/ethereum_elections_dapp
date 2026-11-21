@@ -14,7 +14,23 @@ export const electionFactoryAbi = [
   },
   {
     "inputs": [],
+    "name": "AlreadyNominated",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "AlreadyRegisteredIdentityCommitment",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "election",
+        "type": "address"
+      }
+    ],
+    "name": "CandidateBusy",
     "type": "error"
   },
   {
@@ -44,8 +60,34 @@ export const electionFactoryAbi = [
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "enum ElectionPhase",
+        "name": "current",
+        "type": "uint8"
+      },
+      {
+        "internalType": "enum ElectionPhase",
+        "name": "expected",
+        "type": "uint8"
+      }
+    ],
+    "name": "InvalidPhase",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "InvalidVoterAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotNominated",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotPartyPresident",
     "type": "error"
   },
   {
@@ -81,6 +123,21 @@ export const electionFactoryAbi = [
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "UnknownCandidate",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UnknownElection",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UnknownParty",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -110,6 +167,68 @@ export const electionFactoryAbi = [
       }
     ],
     "name": "IdentityRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "election",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "candidate",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "candidacy",
+        "type": "address"
+      }
+    ],
+    "name": "Nominated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "election",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "candidate",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "candidacy",
+        "type": "address"
+      }
+    ],
+    "name": "NominationWithdrawn",
     "type": "event"
   },
   {
@@ -187,6 +306,30 @@ export const electionFactoryAbi = [
     "inputs": [
       {
         "internalType": "address",
+        "name": "election",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "candidate",
+        "type": "address"
+      }
+    ],
+    "name": "candidacyOf",
+    "outputs": [
+      {
+        "internalType": "contract Candidacy",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -212,9 +355,9 @@ export const electionFactoryAbi = [
             "type": "string"
           },
           {
-            "internalType": "string[]",
-            "name": "candidates",
-            "type": "string[]"
+            "internalType": "uint64",
+            "name": "nominationEnd",
+            "type": "uint64"
           },
           {
             "internalType": "uint64",
@@ -297,6 +440,44 @@ export const electionFactoryAbi = [
     "inputs": [
       {
         "internalType": "address",
+        "name": "candidate",
+        "type": "address"
+      }
+    ],
+    "name": "heldBy",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "candidacy",
+        "type": "address"
+      }
+    ],
+    "name": "isActive",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -345,6 +526,73 @@ export const electionFactoryAbi = [
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract Election",
+        "name": "election",
+        "type": "address"
+      },
+      {
+        "internalType": "contract Candidate",
+        "name": "candidate",
+        "type": "address"
+      }
+    ],
+    "name": "nominate",
+    "outputs": [
+      {
+        "internalType": "contract Candidacy",
+        "name": "candidacy",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "election",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      }
+    ],
+    "name": "nomineeOf",
+    "outputs": [
+      {
+        "internalType": "contract Candidacy",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "election",
+        "type": "address"
+      }
+    ],
+    "name": "nomineesOf",
+    "outputs": [
+      {
+        "internalType": "contract Candidacy[]",
+        "name": "",
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
@@ -439,6 +687,24 @@ export const electionFactoryAbi = [
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract Election",
+        "name": "election",
+        "type": "address"
+      },
+      {
+        "internalType": "contract Party",
+        "name": "party",
+        "type": "address"
+      }
+    ],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ] as const;
 
@@ -447,11 +713,6 @@ export const electionAbi = [
     "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
-  },
-  {
-    "inputs": [],
-    "name": "InvalidCandidatesQuantity",
-    "type": "error"
   },
   {
     "inputs": [],
@@ -466,6 +727,11 @@ export const electionAbi = [
   {
     "inputs": [],
     "name": "InvalidMessage",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidNominationEnd",
     "type": "error"
   },
   {
@@ -598,9 +864,9 @@ export const electionAbi = [
     "name": "candidates",
     "outputs": [
       {
-        "internalType": "string[]",
+        "internalType": "contract Candidacy[]",
         "name": "",
-        "type": "string[]"
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
@@ -614,6 +880,19 @@ export const electionAbi = [
         "internalType": "uint64",
         "name": "",
         "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "factory",
+    "outputs": [
+      {
+        "internalType": "contract INominees",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -650,6 +929,11 @@ export const electionAbi = [
         "type": "uint256"
       },
       {
+        "internalType": "contract INominees",
+        "name": "_factory",
+        "type": "address"
+      },
+      {
         "components": [
           {
             "internalType": "string",
@@ -657,9 +941,9 @@ export const electionAbi = [
             "type": "string"
           },
           {
-            "internalType": "string[]",
-            "name": "candidates",
-            "type": "string[]"
+            "internalType": "uint64",
+            "name": "nominationEnd",
+            "type": "uint64"
           },
           {
             "internalType": "uint64",
@@ -716,6 +1000,19 @@ export const electionAbi = [
   },
   {
     "inputs": [],
+    "name": "nominationEnd",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "nullVotes",
     "outputs": [
       {
@@ -746,7 +1043,7 @@ export const electionAbi = [
     "outputs": [
       {
         "internalType": "uint256[]",
-        "name": "",
+        "name": "tally",
         "type": "uint256[]"
       },
       {
@@ -1523,6 +1820,340 @@ export const candidateAbi = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "party",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pendingOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const;
+
+export const candidacyAbi = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidInitialization",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidRecipient",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NominationInactive",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotInitializing",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RenounceDisabled",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "WithdrawFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroDonation",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "donor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Donated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "version",
+        "type": "uint64"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferStarted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Withdrawn",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "acceptOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "candidate",
+    "outputs": [
+      {
+        "internalType": "contract Candidate",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "donate",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "donatedBy",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "election",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_election",
+        "type": "address"
+      },
+      {
+        "internalType": "contract Candidate",
+        "name": "_candidate",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_party",
+        "type": "address"
+      },
+      {
+        "internalType": "contract ICandidacyStatus",
+        "name": "factory",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
