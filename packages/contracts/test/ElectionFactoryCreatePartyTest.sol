@@ -25,12 +25,12 @@ contract ElectionFactoryCreatePartyTest is ElectionFactoryTestBase {
     }
 
     function test_shouldRevertWithInvalidPresident() public {
-        vm.expectRevert(ElectionFactory.InvalidPresident.selector);
+        vm.expectRevert(Party.InvalidPresident.selector);
         factory.createParty(address(0), "Test Party");
     }
 
     function test_shouldRevertWithEmptyPartyName() public {
-        vm.expectRevert(ElectionFactory.EmptyPartyName.selector);
+        vm.expectRevert(Party.EmptyPartyName.selector);
         factory.createParty(address(1), "");
     }
 

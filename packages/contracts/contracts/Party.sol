@@ -13,6 +13,8 @@ contract Party is Initializable, IDonatable, Ownable2Step {
 
     event Withdrawn(address indexed to, uint256 amount);
 
+    error InvalidPresident();
+    error EmptyPartyName();
     error InvalidRecipient();
     error InsufficientBalance(uint256 balance, uint256 amount);
     error WithdrawFailed();
@@ -27,6 +29,14 @@ contract Party is Initializable, IDonatable, Ownable2Step {
         address president,
         string calldata _name
     ) external initializer {
+        if (president == address(0)) {
+            revert InvalidPresident();
+        }
+
+        if (bytes(_name).length == 0) {
+            revert EmptyPartyName();
+        }
+
         name = _name;
         _transferOwnership(president);
     }

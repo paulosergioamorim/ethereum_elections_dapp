@@ -60,7 +60,7 @@ Contract calls, so 200 means the call succeeds, 403 a revert for a caller who ma
 
 | Route | In | Out | Status | Who |
 | --- | --- | --- | --- | --- |
-| `ElectionFactory.createParty(address president, string name)` | president, name | `Party` | 200 success; 403 revert `OwnableUnauthorizedAccount`; 400 reverts `InvalidPresident`, `EmptyPartyName` | factory owner; others get 403 |
+| `ElectionFactory.createParty(address president, string name)` | president, name | `Party` | 200 success; 403 revert `OwnableUnauthorizedAccount`; 400 reverts `InvalidPresident`, `EmptyPartyName` (raised by `Party.initialize`, bubbled up through the factory) | factory owner; others get 403 |
 | `IDonatable.donate()` payable | ETH | event `Donated(donor, amount)` | 200 success; 400 revert `ZeroDonation` | anyone |
 | `Party.withdraw(address to, uint256 amount)` | to, amount | event `Withdrawn(to, amount)` | 200 success; 403 revert `OwnableUnauthorizedAccount`; 400 reverts `InvalidRecipient`, `InsufficientBalance`, `WithdrawFailed` | president; others get 403 |
 | `ElectionFactory.parties()` / `isParty(address)` | - | `Party[]` / `bool` | 200 | anyone |
@@ -84,8 +84,8 @@ The factory owner creates a Party and a donor sends ETH to it.
 
 1. WHEN the factory owner calls `createParty(president, name)` THEN the factory SHALL clone the `Party` implementation and initialize it, so that the new `Party` has `owner()` equal to `president` and `name()` equal to `name`, push it to `parties()`, set `isParty` true and emit `PartyCreated(party)`
 2. IF a non-owner calls `createParty` THEN the factory SHALL revert with `OwnableUnauthorizedAccount`
-3. IF `president` is `address(0)` THEN the factory SHALL revert with `InvalidPresident`
-4. IF `name` is empty THEN the factory SHALL revert with `EmptyPartyName`
+3. IF `president` is `address(0)` THEN `Party.initialize` SHALL revert (bubbling up through `createParty`) with `InvalidPresident`
+4. IF `name` is empty THEN `Party.initialize` SHALL revert (bubbling up through `createParty`) with `EmptyPartyName`
 5. WHEN any account calls `donate()` with `msg.value` > 0 THEN the party SHALL add it to `donatedBy(donor)`, increase its balance by `msg.value` and emit `Donated(donor, msg.value)`
    - 1 wei → accepted; two donations of 1 and 2 ETH by the same donor → `donatedBy` = 3 ETH
 6. IF `donate()` is called with `msg.value` = 0 THEN the party SHALL revert with `ZeroDonation`

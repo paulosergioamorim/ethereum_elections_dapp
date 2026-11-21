@@ -24,11 +24,6 @@ export const electionFactoryAbi = [
   },
   {
     "inputs": [],
-    "name": "EmptyPartyName",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "FailedDeployment",
     "type": "error"
   },
@@ -46,11 +41,6 @@ export const electionFactoryAbi = [
       }
     ],
     "name": "InsufficientBalance",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "InvalidPresident",
     "type": "error"
   },
   {
@@ -912,6 +902,11 @@ export const partyAbi = [
     "type": "constructor"
   },
   {
+    "inputs": [],
+    "name": "EmptyPartyName",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -930,6 +925,11 @@ export const partyAbi = [
   {
     "inputs": [],
     "name": "InvalidInitialization",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPresident",
     "type": "error"
   },
   {

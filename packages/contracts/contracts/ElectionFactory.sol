@@ -48,8 +48,6 @@ contract ElectionFactory is Ownable {
     error CommitmentCannotBeZero();
     error UnauthorizedVoter();
     error RenounceDisabled();
-    error InvalidPresident();
-    error EmptyPartyName();
 
     function addAuthorizedVoters(address[] calldata voters) external onlyOwner {
         for (uint256 i = 0; i < voters.length; ++i) {
@@ -117,14 +115,6 @@ contract ElectionFactory is Ownable {
         address president,
         string calldata name
     ) external onlyOwner returns (Party party) {
-        if (president == address(0)) {
-            revert InvalidPresident();
-        }
-
-        if (bytes(name).length == 0) {
-            revert EmptyPartyName();
-        }
-
         party = Party(Clones.clone(_partyBase));
         party.initialize(president, name);
         _parties.push(party);
