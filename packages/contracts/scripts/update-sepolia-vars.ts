@@ -1,6 +1,6 @@
 // Atualiza as variáveis do GitHub Actions (VITE_FACTORY_ADDRESS e VITE_FACTORY_DEPLOY_BLOCK) com o `gh`,
-// a partir de uma implantação já feita por `pnpm deploy:sepolia`. Não usa rede nem chaves.
-// Uso: DEPLOYMENT_ID=v4_0_0 pnpm update-vars:sepolia
+// a partir de uma implantação já feita com o Ignition (`pnpm hardhat ignition deploy ignition/modules/ElectionFactory.ts --network sepolia --deployment-id <id>`). Não usa rede nem chaves.
+// Uso: DEPLOYMENT_ID=<id> pnpm update-vars:sepolia   (o mesmo <id> da implantação)
 // Depois, dispare o deploy do frontend (push na main ou `gh workflow run deploy.yml`).
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
