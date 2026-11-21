@@ -138,4 +138,89 @@ describe("Candidate (página do candidato)", () => {
       expect(within(stat("Saldo")).getByText("2 ETH")).toBeInTheDocument();
     });
   });
+
+  describe("sacar (carteira do candidato)", () => {
+    async function openAs(account: Address | undefined, candidate: MockCandidate) {
+      mockChain({ owner: carol, parties: [newParty([candidate])] });
+      const wallet = account ? connectReturningUser({ accounts: [account] }) : undefined;
+      const user = userEvent.setup();
+      renderRoute(`/candidates/${candidateAddress}`);
+      await screen.findByRole("heading", { name: "Candidato Um" });
+
+      return { wallet, user };
+    }
+
+    it("should show the form to the candidate wallet, with the destination starting as its address", async () => {
+      await openAs(alice, newCandidate({ owner: alice }));
+
+      expect(await screen.findByLabelText("Destino")).toHaveValue(alice);
+    });
+
+    it.each([
+      ["the party president", bob],
+      ["another account", carol],
+      ["no wallet", undefined],
+    ])("should not show the form to %s", async (_, account) => {
+      await openAs(account, newCandidate({ owner: alice }));
+      await screen.findByLabelText("Valor em ETH");
+
+      expect(screen.queryByLabelText("Destino")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Sacar tudo" })).not.toBeInTheDocument();
+    });
+
+    it("should send withdraw(to, amount) to the candidate and refresh the balance", async () => {
+      const mock = newCandidate({ owner: alice, balance: 2n * 10n ** 18n });
+      const { wallet, user } = await openAs(alice, mock);
+      vi.mocked(publicClient.waitForTransactionReceipt).mockImplementationOnce((async ({ hash }: { hash: string }) => {
+        mock.balance = 15n * 10n ** 17n;
+
+        return { status: "success", transactionHash: hash, logs: [] };
+      }) as never);
+
+      const to = await screen.findByLabelText("Destino");
+      await user.clear(to);
+      await user.type(to, carol);
+      await user.type(screen.getByLabelText("Valor em ETH", { selector: "#withdraw-amount" }), "0.5");
+      await user.click(screen.getByRole("button", { name: "Sacar" }));
+
+      await waitFor(() => expect(wallet!.transactions).toHaveLength(1));
+      expect(sentCall(wallet!)).toMatchObject({
+        to: candidateAddress,
+        functionName: "withdraw",
+        args: [carol, 5n * 10n ** 17n],
+      });
+      expect(await within(stat("Saldo")).findByText("1,5 ETH")).toBeInTheDocument();
+    });
+
+    it("should fill the field with the exact balance", async () => {
+      const { user } = await openAs(alice, newCandidate({ owner: alice, balance: 1_234_567_800_000_000_000n }));
+
+      await user.click(await screen.findByRole("button", { name: "Sacar tudo" }));
+
+      expect(screen.getByLabelText("Valor em ETH", { selector: "#withdraw-amount" })).toHaveValue("1.2345678");
+    });
+
+    it.each([
+      ["destination is not an address", "0x123", "0.1", /endereço/i],
+      ["destination is the zero address", "0x0000000000000000000000000000000000000000", "0.1", /endereço/i],
+      ["amount is empty", "", "", /Informe um valor/],
+      ["amount is zero", "", "0", /maior que zero/],
+      ["amount is one wei above the balance", "", "1.000000000000000001", /saldo do candidato/],
+    ])("should not open the wallet when the %s", async (_, to, amount, message) => {
+      const { wallet, user } = await openAs(alice, newCandidate({ owner: alice, balance: 10n ** 18n }));
+      const destination = await screen.findByLabelText("Destino");
+
+      if (to) {
+        await user.clear(destination);
+        await user.type(destination, to);
+      }
+      if (amount) {
+        await user.type(screen.getByLabelText("Valor em ETH", { selector: "#withdraw-amount" }), amount);
+      }
+      await user.click(screen.getByRole("button", { name: "Sacar" }));
+
+      expect(await screen.findByText(message, { selector: "p.text-destructive" })).toBeInTheDocument();
+      expect(wallet!.transactions).toHaveLength(0);
+    });
+  });
 });

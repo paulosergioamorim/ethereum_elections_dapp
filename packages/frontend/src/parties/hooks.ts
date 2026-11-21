@@ -62,8 +62,8 @@ export function useDonate(target: Address) {
   });
 }
 
-/** `withdraw`: o presidente saca `amount` (wei) do partido para `to`. */
-export function useWithdraw(party: Address) {
+/** `withdraw`: o dono saca `amount` (wei) do partido ou do candidato para `to`. */
+export function useWithdraw(target: Address) {
   const { walletClient } = useWallet();
   const queryClient = useQueryClient();
 
@@ -81,7 +81,7 @@ export function useWithdraw(party: Address) {
         async () => {
           const { request } = await publicClient.simulateContract({
             account: client.account,
-            address: party,
+            address: target,
             abi: partyAbi,
             functionName: "withdraw",
             args: [to, amount],

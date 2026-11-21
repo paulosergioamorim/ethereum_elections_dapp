@@ -18,20 +18,23 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
   ) : null;
 }
 
-/** Sacar do partido: só o presidente vê. O destino começa no endereço do próprio presidente. */
+/** Sacar de um contrato de doações (partido ou candidato): só o `owner` vê. O destino começa no endereço dele. */
 export function WithdrawCard({
-  party,
-  president,
+  target,
+  owner,
   balance,
+  holder = "partido",
 }: {
-  party: Address;
-  president: Address;
+  target: Address;
+  /** Quem saca: o presidente do partido ou a carteira do candidato. */
+  owner: Address;
   /** Saldo em wei. */
   balance: bigint;
+  holder?: "partido" | "candidato";
 }) {
   const { isWrongChain } = useWallet();
-  const withdraw = useWithdraw(party);
-  const [values, setValues] = useState({ to: president as string, amount: "" });
+  const withdraw = useWithdraw(target);
+  const [values, setValues] = useState({ to: owner as string, amount: "" });
   const [errors, setErrors] = useState<WithdrawErrors>({});
   const reason = isWrongChain ? `Troque a carteira para a ${appChain.name}.` : undefined;
 
@@ -42,7 +45,7 @@ export function WithdrawCard({
 
   function onSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const { errors: found, input } = validateWithdrawForm(values, balance);
+    const { errors: found, input } = validateWithdrawForm(values, balance, holder);
     setErrors(found);
 
     if (!input || reason) {
@@ -57,7 +60,7 @@ export function WithdrawCard({
       layout="stacked"
       icon={BanknoteArrowDownIcon}
       title="Sacar"
-      description="Só o presidente saca. Confira o destino: a transação não tem volta."
+      description={`Só ${holder === "partido" ? "o presidente" : "a carteira do candidato"} saca. Confira o destino: a transação não tem volta.`}
     >
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <div className="space-y-2">

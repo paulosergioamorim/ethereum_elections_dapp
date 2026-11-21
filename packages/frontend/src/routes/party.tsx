@@ -107,8 +107,8 @@ export function Party() {
           <>
             <WithdrawCard
               key={data.owner}
-              party={data.address}
-              president={data.owner}
+              target={data.address}
+              owner={data.owner}
               balance={data.balance}
             />
             <HandoverCard party={data.address} />

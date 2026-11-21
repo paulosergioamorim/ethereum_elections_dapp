@@ -6,7 +6,15 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { formatEth, shortAddress } from "@/lib/format";
-import { CandidateNotFoundError, DonateCard, useCandidate, useDonated, useParty } from "@/parties";
+import {
+  CandidateNotFoundError,
+  DonateCard,
+  isSameAccount,
+  useCandidate,
+  useDonated,
+  useParty,
+  WithdrawCard,
+} from "@/parties";
 import { ConnectWalletNotice, useWallet } from "@/wallet";
 
 function CandidateMissing({ notFound }: { notFound: boolean }) {
@@ -96,6 +104,9 @@ export function Candidate() {
           target={data.address}
           description="O valor vai para o saldo do candidato; só a carteira dele saca."
         />
+        {isSameAccount(account, data.owner) && (
+          <WithdrawCard key={data.owner} target={data.address} owner={data.owner} balance={data.balance} holder="candidato" />
+        )}
       </div>
     </div>
   );
