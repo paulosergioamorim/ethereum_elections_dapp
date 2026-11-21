@@ -10,10 +10,16 @@ import { useWallet } from "@/wallet";
 import { parseEthAmount } from "../amount";
 import { useDonate } from "../hooks";
 
-/** Doar ETH ao partido. Sem carteira (ou na rede errada), o botão se desabilita com o motivo. */
-export function DonateCard({ party }: { party: Address }) {
+/** Doar ETH a um contrato de doações (partido ou candidato). Sem carteira (ou na rede errada), o botão se desabilita com o motivo. */
+export function DonateCard({
+  target,
+  description = "O valor vai para o saldo do partido; só o presidente saca.",
+}: {
+  target: Address;
+  description?: string;
+}) {
   const { status, isWrongChain } = useWallet();
-  const donate = useDonate(party);
+  const donate = useDonate(target);
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string>();
 
@@ -41,7 +47,7 @@ export function DonateCard({ party }: { party: Address }) {
       layout="stacked"
       icon={HandCoinsIcon}
       title="Doar"
-      description="O valor vai para o saldo do partido; só o presidente saca."
+      description={description}
     >
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <div className="space-y-2">

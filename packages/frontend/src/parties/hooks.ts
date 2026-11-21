@@ -7,6 +7,7 @@ import { runTransaction } from "@/lib/transaction";
 import { requireWalletClient, useWallet } from "@/wallet";
 import { partyKeys } from "./keys";
 import {
+  candidateQueryOptions,
   donatedQueryOptions,
   partiesQueryOptions,
   partyCandidatesQueryOptions,
@@ -28,8 +29,8 @@ export function useDonated(address: Address | undefined, account: Address | unde
   return useQuery(donatedQueryOptions(address, account));
 }
 
-/** `donate`: envia ETH ao partido. */
-export function useDonate(party: Address) {
+/** `donate`: envia ETH ao partido ou ao candidato (as duas ABIs têm o mesmo `donate`). */
+export function useDonate(target: Address) {
   const { walletClient } = useWallet();
   const queryClient = useQueryClient();
 
@@ -41,13 +42,13 @@ export function useDonate(party: Address) {
       return runTransaction(
         {
           signing: "Confirme a doação na carteira.",
-          details: `${formatEth(value)} para ${shortAddress(party)}`,
+          details: `${formatEth(value)} para ${shortAddress(target)}`,
           success: "Doação enviada.",
         },
         async () => {
           const { request } = await publicClient.simulateContract({
             account: client.account,
-            address: party,
+            address: target,
             abi: partyAbi,
             functionName: "donate",
             value,
@@ -191,6 +192,11 @@ export function useCreateParty() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: partyKeys.all }),
   });
+}
+
+/** Dados de um candidato; sem endereço, não consulta. */
+export function useCandidate(address: Address | undefined) {
+  return useQuery(candidateQueryOptions(address));
 }
 
 /** Candidatos de um partido (leitura pública, sem carteira). */

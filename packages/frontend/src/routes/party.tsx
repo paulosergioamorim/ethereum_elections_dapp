@@ -102,7 +102,7 @@ export function Party() {
       <ConnectWalletNotice>Conecte sua carteira para doar a este partido.</ConnectWalletNotice>
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
-        <DonateCard party={data.address} />
+        <DonateCard target={data.address} />
         {isPresident && (
           <>
             <WithdrawCard

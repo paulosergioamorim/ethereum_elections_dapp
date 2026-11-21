@@ -117,7 +117,7 @@ type CandidateDetails = {
 };
 
 /** O endereço não é um candidato de um partido desta factory. */
-class CandidateNotFoundError extends Error {
+export class CandidateNotFoundError extends Error {
   constructor(address: Address) {
     super(`O endereço ${address} não é um candidato desta factory.`);
     this.name = "CandidateNotFoundError";
