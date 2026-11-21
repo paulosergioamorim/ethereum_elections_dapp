@@ -9,7 +9,7 @@ export function NetworkStatus() {
   const state = blockNumber.isError ? "error" : blockNumber.data === undefined ? "loading" : "online";
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border bg-card px-2.5 py-1 text-xs text-muted-foreground">
       <span
         aria-hidden
         className={cn(
@@ -21,7 +21,7 @@ export function NetworkStatus() {
       />
       {state === "error" ? "Rede indisponível" : appChain.name}
       {blockNumber.data !== undefined && !blockNumber.isError && (
-        <span className="hidden sm:inline">· bloco {formatInteger(blockNumber.data)}</span>
+        <span className="hidden xl:inline">· bloco {formatInteger(blockNumber.data)}</span>
       )}
     </span>
   );
