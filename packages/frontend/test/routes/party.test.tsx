@@ -13,7 +13,7 @@ const party: Address = "0x90F79bf6EB2c4f870365E785982E1f101E93b906";
 const stranger: Address = "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65";
 
 function newParty(overrides: Partial<MockParty> = {}): MockParty {
-  return { address: party, name: "PT", owner: bob, balance: 2n * 10n ** 18n, ...overrides };
+  return { address: party, name: "Alfa", owner: bob, balance: 2n * 10n ** 18n, ...overrides };
 }
 
 function sentCall(wallet: MockWallet, index = 0) {
@@ -31,7 +31,7 @@ describe("Party (página do partido)", () => {
     mockChain({ owner: carol, parties: [newParty({ balance: 1_500_000_000_000_000_000n })] });
     renderRoute(`/parties/${party}`);
 
-    expect(await screen.findByRole("heading", { name: "PT" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Alfa" })).toBeInTheDocument();
     expect(within(stat("Presidente")).getByText(shortAddress(bob))).toBeInTheDocument();
     expect(within(stat("Saldo")).getByText("1,5 ETH")).toBeInTheDocument();
     expect(within(stat("Você já doou")).getByText("—")).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe("Party (página do partido)", () => {
     mockChain({ owner: carol, parties: [newParty({ donatedBy: { [alice]: 250_000_000_000_000_000n } })] });
     connectReturningUser({ accounts: [alice] });
     renderRoute(`/parties/${party}`);
-    await screen.findByRole("heading", { name: "PT" });
+    await screen.findByRole("heading", { name: "Alfa" });
 
     expect(await within(stat("Você já doou")).findByText("0,25 ETH")).toBeInTheDocument();
   });
@@ -63,7 +63,7 @@ describe("Party (página do partido)", () => {
       const wallet = connectReturningUser({ accounts: [alice] });
       const user = userEvent.setup();
       renderRoute(`/parties/${party}`);
-      await screen.findByRole("heading", { name: "PT" });
+      await screen.findByRole("heading", { name: "Alfa" });
       await waitFor(() => expect(screen.getByRole("button", { name: "Doar" })).toBeEnabled());
 
       return { ...chain, wallet, user };
@@ -112,10 +112,95 @@ describe("Party (página do partido)", () => {
       mockChain({ owner: carol, parties: [newParty()] });
       renderRoute(`/parties/${party}`);
 
-      expect(await screen.findByRole("heading", { name: "PT" })).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "Alfa" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Doar" })).toBeDisabled();
       expect(screen.getByText("Conecte a carteira para doar.")).toBeInTheDocument();
       expect(within(stat("Saldo")).getByText("2 ETH")).toBeInTheDocument();
+    });
+  });
+
+  describe("sacar (presidente)", () => {
+    async function openAs(account: Address | undefined, mock: MockParty) {
+      mockChain({ owner: carol, parties: [mock] });
+      const wallet = account ? connectReturningUser({ accounts: [account] }) : undefined;
+      const user = userEvent.setup();
+      renderRoute(`/parties/${party}`);
+      await screen.findByRole("heading", { name: "Alfa" });
+
+      return { wallet, user };
+    }
+
+    it("should show the form only to the president, with the destination starting as their address", async () => {
+      await openAs(bob, newParty({ owner: bob }));
+
+      expect(await screen.findByLabelText("Destino")).toHaveValue(bob);
+    });
+
+    it.each([
+      ["another account", alice],
+      ["no wallet", undefined],
+    ])("should not show the form to %s", async (_, account) => {
+      await openAs(account, newParty({ owner: bob }));
+      await screen.findByLabelText("Valor em ETH");
+
+      expect(screen.queryByLabelText("Destino")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Sacar tudo" })).not.toBeInTheDocument();
+    });
+
+    it("should send withdraw(to, amount) and refresh the balance", async () => {
+      const mock = newParty({ owner: bob, balance: 2n * 10n ** 18n });
+      const { wallet, user } = await openAs(bob, mock);
+      vi.mocked(publicClient.waitForTransactionReceipt).mockImplementationOnce((async ({ hash }: { hash: string }) => {
+        mock.balance = 15n * 10n ** 17n;
+
+        return { status: "success", transactionHash: hash, logs: [] };
+      }) as never);
+
+      const to = await screen.findByLabelText("Destino");
+      await user.clear(to);
+      await user.type(to, carol);
+      await user.type(screen.getByLabelText("Valor em ETH", { selector: "#withdraw-amount" }), "0.5");
+      await user.click(screen.getByRole("button", { name: "Sacar" }));
+
+      await waitFor(() => expect(wallet!.transactions).toHaveLength(1));
+      expect(sentCall(wallet!)).toMatchObject({
+        to: party,
+        functionName: "withdraw",
+        args: [carol, 5n * 10n ** 17n],
+      });
+      expect(await within(stat("Saldo")).findByText("1,5 ETH")).toBeInTheDocument();
+    });
+
+    it("should fill the field with the exact balance, not the rounded one", async () => {
+      const { user } = await openAs(bob, newParty({ owner: bob, balance: 1_234_567_800_000_000_000n }));
+
+      await user.click(await screen.findByRole("button", { name: "Sacar tudo" }));
+
+      expect(screen.getByLabelText("Valor em ETH", { selector: "#withdraw-amount" })).toHaveValue("1.2345678");
+      expect(within(stat("Saldo")).getByText("1,2345 ETH")).toBeInTheDocument();
+    });
+
+    it.each([
+      ["destination is not an address", "0x123", "0.1"],
+      ["destination is the zero address", "0x0000000000000000000000000000000000000000", "0.1"],
+      ["amount is empty", "", ""],
+      ["amount is zero", "", "0"],
+      ["amount is one wei above the balance", "", "1.000000000000000001"],
+    ])("should not open the wallet when the %s", async (_, to, amount) => {
+      const { wallet, user } = await openAs(bob, newParty({ owner: bob, balance: 10n ** 18n }));
+      const destination = await screen.findByLabelText("Destino");
+
+      if (to) {
+        await user.clear(destination);
+        await user.type(destination, to);
+      }
+      if (amount) {
+        await user.type(screen.getByLabelText("Valor em ETH", { selector: "#withdraw-amount" }), amount);
+      }
+      await user.click(screen.getByRole("button", { name: "Sacar" }));
+
+      expect(await screen.findAllByText(/endereço|valor|Informe/i, { selector: "p.text-destructive" })).not.toHaveLength(0);
+      expect(wallet!.transactions).toHaveLength(0);
     });
   });
 });

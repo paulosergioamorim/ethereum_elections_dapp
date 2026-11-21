@@ -190,7 +190,7 @@ describe("Admin (aba da autoridade)", () => {
         hash: string;
       }) => {
         // o contrato registra o partido antes de a lista ser lida de novo
-        parties.push({ address: carol, name: "Partido Verde", owner: bob });
+        parties.push({ address: carol, name: "Partido Beta", owner: bob });
 
         return {
           status: "success",
@@ -201,7 +201,7 @@ describe("Admin (aba da autoridade)", () => {
       const user = userEvent.setup();
       renderRoute("/admin");
 
-      await user.type(await screen.findByLabelText("Nome do partido"), "Partido Verde");
+      await user.type(await screen.findByLabelText("Nome do partido"), "Partido Beta");
       await user.type(screen.getByLabelText("Endereço do presidente"), bob);
       const submit = screen.getByRole("button", { name: "Criar partido" });
       await waitFor(() => expect(submit).toBeEnabled());
@@ -214,7 +214,7 @@ describe("Admin (aba da autoridade)", () => {
       expect(sentCall(wallet)).toMatchObject({
         to: factoryAddress,
         functionName: "createParty",
-        args: [bob, "Partido Verde"],
+        args: [bob, "Partido Beta"],
       });
 
       await user.click(
@@ -222,7 +222,7 @@ describe("Admin (aba da autoridade)", () => {
           name: "Partidos",
         }),
       );
-      expect(await screen.findByRole("link", { name: /Partido Verde/ })).toBeInTheDocument();
+      expect(await screen.findByRole("link", { name: /Partido Beta/ })).toBeInTheDocument();
     });
 
     it("should not open the wallet for an invalid president address", async () => {
@@ -231,7 +231,7 @@ describe("Admin (aba da autoridade)", () => {
       const user = userEvent.setup();
       renderRoute("/admin");
 
-      await user.type(await screen.findByLabelText("Nome do partido"), "PT");
+      await user.type(await screen.findByLabelText("Nome do partido"), "Alfa");
       await user.type(screen.getByLabelText("Endereço do presidente"), "0x123");
       await waitFor(() => expect(screen.getByRole("button", { name: "Criar partido" })).toBeEnabled());
       await user.click(screen.getByRole("button", { name: "Criar partido" }));

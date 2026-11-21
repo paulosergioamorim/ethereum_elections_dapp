@@ -2,7 +2,7 @@ import { getAddress, isAddress, zeroAddress, type Address } from "viem";
 import type { CreatePartyInput } from "./hooks";
 
 /** Endereço digitado: válido e diferente do endereço zero, ou o erro em uma frase. */
-function parseAddress(text: string): { address: Address } | { error: string } {
+export function parseAddress(text: string): { address: Address } | { error: string } {
   const value = text.trim();
 
   if (!isAddress(value, { strict: false })) {

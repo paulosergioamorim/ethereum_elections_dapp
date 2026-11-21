@@ -7,8 +7,8 @@ import { mockChain, type MockParty } from "../helpers/mock-chain";
 import { alice, bob, carol } from "../helpers/mock-wallet";
 import { renderRoute } from "../helpers/render";
 
-const pt: MockParty = { address: alice, name: "PT", owner: bob, balance: 1_500_000_000_000_000_000n };
-const verde: MockParty = { address: carol, name: "Partido Verde", owner: alice };
+const alfa: MockParty = { address: alice, name: "Alfa", owner: bob, balance: 1_500_000_000_000_000_000n };
+const beta: MockParty = { address: carol, name: "Partido Beta", owner: alice };
 
 async function partyLinks() {
   return (await screen.findAllByRole("link", { name: /Presidente/ })).map((link) =>
@@ -18,23 +18,23 @@ async function partyLinks() {
 
 describe("Parties (aba Partidos)", () => {
   it("should be reachable from the header for everyone, without a wallet", async () => {
-    mockChain({ owner: bob, parties: [pt] });
+    mockChain({ owner: bob, parties: [alfa] });
     renderRoute("/");
 
     const nav = screen.getByRole("navigation", { name: "Principal" });
     await userEvent.setup().click(within(nav).getByRole("link", { name: "Partidos" }));
 
-    expect(await screen.findByRole("link", { name: /PT/ })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /Alfa/ })).toBeInTheDocument();
   });
 
   it("should list one row per party, newest first, with name, president, balance and link", async () => {
-    mockChain({ owner: bob, parties: [pt, verde] });
+    mockChain({ owner: bob, parties: [alfa, beta] });
     renderRoute("/parties");
 
     expect(await partyLinks()).toEqual([`/parties/${carol}`, `/parties/${alice}`]);
 
-    const row = screen.getByRole("link", { name: /PT/ });
-    expect(within(row).getByText("PT")).toBeInTheDocument();
+    const row = screen.getByRole("link", { name: /Alfa/ });
+    expect(within(row).getByText("Alfa")).toBeInTheDocument();
     expect(within(row).getByText(shortAddress(bob))).toBeInTheDocument();
     expect(await within(row).findByText("1,5 ETH")).toBeInTheDocument();
   });
@@ -48,21 +48,21 @@ describe("Parties (aba Partidos)", () => {
 
   describe("busca", () => {
     it("should filter by name, ignoring case", async () => {
-      mockChain({ owner: bob, parties: [pt, verde] });
+      mockChain({ owner: bob, parties: [alfa, beta] });
       const user = userEvent.setup();
       renderRoute("/parties");
-      await screen.findByRole("link", { name: /Partido Verde/ });
+      await screen.findByRole("link", { name: /Partido Beta/ });
 
-      await user.type(screen.getByRole("searchbox", { name: "Buscar partido" }), "VERDE");
+      await user.type(screen.getByRole("searchbox", { name: "Buscar partido" }), "BETA");
 
       expect(await partyLinks()).toEqual([`/parties/${carol}`]);
     });
 
     it("should filter by the president address", async () => {
-      mockChain({ owner: bob, parties: [pt, verde] });
+      mockChain({ owner: bob, parties: [alfa, beta] });
       const user = userEvent.setup();
       renderRoute("/parties");
-      await screen.findByRole("link", { name: /Partido Verde/ });
+      await screen.findByRole("link", { name: /Partido Beta/ });
 
       await user.type(screen.getByRole("searchbox", { name: "Buscar partido" }), bob.slice(2, 12));
 
@@ -70,10 +70,10 @@ describe("Parties (aba Partidos)", () => {
     });
 
     it("should say when nothing matches", async () => {
-      mockChain({ owner: bob, parties: [pt] });
+      mockChain({ owner: bob, parties: [alfa] });
       const user = userEvent.setup();
       renderRoute("/parties");
-      await screen.findByRole("link", { name: /PT/ });
+      await screen.findByRole("link", { name: /Alfa/ });
 
       await user.type(screen.getByRole("searchbox", { name: "Buscar partido" }), "prefeito");
 
@@ -82,7 +82,7 @@ describe("Parties (aba Partidos)", () => {
   });
 
   it("should show an error with a retry button when the list cannot be read", async () => {
-    mockChain({ owner: bob, parties: [pt] });
+    mockChain({ owner: bob, parties: [alfa] });
     const read = vi.mocked(publicClient.readContract).getMockImplementation()!;
     vi.mocked(publicClient.readContract).mockImplementation(((parameters: { functionName: string }) =>
       parameters.functionName === "parties"
@@ -96,6 +96,6 @@ describe("Parties (aba Partidos)", () => {
     vi.mocked(publicClient.readContract).mockImplementation(read);
     await user.click(screen.getByRole("button", { name: "Tentar de novo" }));
 
-    expect(await screen.findByRole("link", { name: /PT/ })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /Alfa/ })).toBeInTheDocument();
   });
 });

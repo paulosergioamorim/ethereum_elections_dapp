@@ -56,6 +56,39 @@ export function useDonate(party: Address) {
   });
 }
 
+/** `withdraw`: o presidente saca `amount` (wei) do partido para `to`. */
+export function useWithdraw(party: Address) {
+  const { walletClient } = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: { errorTitle: "Não foi possível sacar" },
+    mutationFn: async ({ to, amount }: { to: Address; amount: bigint }) => {
+      const client = requireWalletClient(walletClient);
+
+      return runTransaction(
+        {
+          signing: "Confirme o saque na carteira.",
+          details: `${formatEth(amount)} para ${shortAddress(to)}`,
+          success: "Saque enviado.",
+        },
+        async () => {
+          const { request } = await publicClient.simulateContract({
+            account: client.account,
+            address: party,
+            abi: partyAbi,
+            functionName: "withdraw",
+            args: [to, amount],
+          });
+
+          return client.writeContract(request);
+        },
+      );
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: partyKeys.all }),
+  });
+}
+
 export type CreatePartyInput = {
   president: Address;
   name: string;

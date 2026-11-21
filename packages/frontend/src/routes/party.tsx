@@ -6,7 +6,14 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { formatEth, shortAddress } from "@/lib/format";
-import { DonateCard, PartyNotFoundError, useDonated, useParty } from "@/parties";
+import {
+  DonateCard,
+  isSameAccount,
+  PartyNotFoundError,
+  useDonated,
+  useParty,
+  WithdrawCard,
+} from "@/parties";
 import { ConnectWalletNotice, useWallet } from "@/wallet";
 
 function PartyMissing({ notFound }: { notFound: boolean }) {
@@ -82,6 +89,14 @@ export function Party() {
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <DonateCard party={data.address} />
+        {isSameAccount(account, data.owner) && (
+          <WithdrawCard
+            key={data.owner}
+            party={data.address}
+            president={data.owner}
+            balance={data.balance}
+          />
+        )}
       </div>
     </div>
   );

@@ -4,14 +4,14 @@ import { alice } from "../helpers/mock-wallet";
 
 describe("validateCreatePartyForm", () => {
   it("should build the createParty input, trimming the name", () => {
-    expect(validateCreatePartyForm({ president: alice, name: "  Partido Verde " })).toEqual({
+    expect(validateCreatePartyForm({ president: alice, name: "  Partido Beta " })).toEqual({
       errors: {},
-      input: { president: alice, name: "Partido Verde" },
+      input: { president: alice, name: "Partido Beta" },
     });
   });
 
   it("should flag an invalid president address", () => {
-    const { errors, input } = validateCreatePartyForm({ president: "0xabc", name: "PT" });
+    const { errors, input } = validateCreatePartyForm({ president: "0xabc", name: "Alfa" });
 
     expect(errors.president).toBeDefined();
     expect(errors.name).toBeUndefined();
@@ -19,7 +19,7 @@ describe("validateCreatePartyForm", () => {
   });
 
   it("should accept a lowercase president address and normalise it", () => {
-    expect(validateCreatePartyForm({ president: ` ${alice.toLowerCase()} `, name: "PT" }).input?.president).toBe(
+    expect(validateCreatePartyForm({ president: ` ${alice.toLowerCase()} `, name: "Alfa" }).input?.president).toBe(
       alice,
     );
   });
@@ -27,7 +27,7 @@ describe("validateCreatePartyForm", () => {
   it.each(["", "0x1234", "alice", "0x0000000000000000000000000000000000000000"])(
     "should reject %j as the president",
     (president) => {
-      const { errors, input } = validateCreatePartyForm({ president, name: "PT" });
+      const { errors, input } = validateCreatePartyForm({ president, name: "Alfa" });
 
       expect(errors.president).toBeDefined();
       expect(input).toBeUndefined();
