@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {Ownable, Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IDonatable} from "./IDonatable.sol";
 
 /// @dev O presidente é o `owner()`. O contrato não tem `receive` nem `fallback`,
 /// então só `donate()` aceita ETH.
-contract Party is IDonatable, Ownable2Step {
+contract Party is Initializable, IDonatable, Ownable2Step {
     string public name;
     mapping(address => uint256) public donatedBy;
 
@@ -17,11 +18,17 @@ contract Party is IDonatable, Ownable2Step {
     error WithdrawFailed();
     error RenounceDisabled();
 
-    constructor(
+    /// @dev Só trava a implementação; os clones não executam o construtor.
+    constructor() Ownable(msg.sender) {
+        _disableInitializers();
+    }
+
+    function initialize(
         address president,
-        string memory _name
-    ) Ownable(president) {
+        string calldata _name
+    ) external initializer {
         name = _name;
+        _transferOwnership(president);
     }
 
     function donate() external payable {

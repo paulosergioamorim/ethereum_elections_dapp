@@ -1,6 +1,6 @@
 # Party
 
-**Approved**: pending - changed door (clone + initialize) needs the user's re-approval (the 2026-11-20 approval covered `new Party`; the user then asked: "O contrato deve usar Clones e initialize, assim como packages/contracts/ usa.")
+**Approved**: 2026-11-21 - user: "aprovado, implemente na worktree e depois realize o merge na main"
 **Settled mid-build:** none
 **Review:** stale - the spec changed after the review at 3366ef1 (Party is now a clone); review again after the rebuild
 **Fix pass:** reset - the earlier pass (criterion 8 test) was against the `new Party` shape; redo after the rebuild

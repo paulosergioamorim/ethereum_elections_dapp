@@ -12,6 +12,7 @@ contract ElectionFactory is Ownable {
     uint256 private constant MERKLE_TREE_DURATION = type(uint64).max;
 
     address private immutable _base = address(new Election());
+    address private immutable _partyBase = address(new Party());
     Election[] private _elections;
     Party[] private _parties;
 
@@ -124,7 +125,8 @@ contract ElectionFactory is Ownable {
             revert EmptyPartyName();
         }
 
-        party = new Party(president, name);
+        party = Party(Clones.clone(_partyBase));
+        party.initialize(president, name);
         _parties.push(party);
         isParty[address(party)] = true;
         emit PartyCreated(address(party));

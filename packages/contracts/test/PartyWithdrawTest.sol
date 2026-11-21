@@ -3,6 +3,7 @@ pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Party} from "../contracts/Party.sol";
 
 contract RejectsEther {}
@@ -14,7 +15,8 @@ contract PartyWithdrawTest is Test {
     address payable recipient = payable(address(0xBEEF));
 
     function setUp() public {
-        party = new Party(president, "Test Party");
+        party = Party(Clones.clone(address(new Party())));
+        party.initialize(president, "Test Party");
         vm.deal(donor, 100 ether);
         vm.prank(donor);
         party.donate{value: 10 ether}();

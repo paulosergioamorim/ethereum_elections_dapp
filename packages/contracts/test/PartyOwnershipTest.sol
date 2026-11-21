@@ -3,6 +3,7 @@ pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Party} from "../contracts/Party.sol";
 
 contract PartyOwnershipTest is Test {
@@ -11,7 +12,8 @@ contract PartyOwnershipTest is Test {
     address newPresident = address(0xB0B);
 
     function setUp() public {
-        party = new Party(president, "Test Party");
+        party = Party(Clones.clone(address(new Party())));
+        party.initialize(president, "Test Party");
         vm.deal(address(this), 1 ether);
         party.donate{value: 1 ether}();
     }
