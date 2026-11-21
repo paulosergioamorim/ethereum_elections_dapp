@@ -274,7 +274,8 @@ type CandidateHold = {
   votingEnd: bigint;
 };
 
-async function fetchCandidateHold(candidate: Address): Promise<CandidateHold | undefined> {
+/** `null` quando ninguém prende o candidato: o React Query não aceita `undefined` como dado. */
+async function fetchCandidateHold(candidate: Address): Promise<CandidateHold | null> {
   const blockNumber = await freshBlockNumber();
   const election = await publicClient.readContract({
     address: factoryAddress,
@@ -285,7 +286,7 @@ async function fetchCandidateHold(candidate: Address): Promise<CandidateHold | u
   });
 
   if (election === zeroAddress) {
-    return undefined;
+    return null;
   }
 
   const votingEnd = await publicClient.readContract({

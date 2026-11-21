@@ -79,7 +79,7 @@ function DonateToNominee({ nominees }: { nominees: readonly Nominee[] }) {
         key={target.candidacy}
         idPrefix="nominee-donate"
         target={target.candidacy}
-        description={`O valor vai para a candidatura de ${target.name} nesta eleição; só a carteira dele saca.`}
+        description={`O valor vai para a candidatura de ${target.name} nesta eleição; só a carteira do candidato saca.`}
       />
     </div>
   );
