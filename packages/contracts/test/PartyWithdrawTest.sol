@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Party} from "../contracts/Party.sol";
+import {DonationHolder} from "../contracts/DonationHolder.sol";
 
 contract RejectsEther {}
 
@@ -24,7 +25,7 @@ contract PartyWithdrawTest is Test {
 
     function test_shouldWithdrawPartial() public {
         vm.expectEmit(true, false, false, true, address(party));
-        emit Party.Withdrawn(recipient, 4 ether);
+        emit DonationHolder.Withdrawn(recipient, 4 ether);
         vm.prank(president);
         party.withdraw(recipient, 4 ether);
         assertEq(recipient.balance, 4 ether);
@@ -61,7 +62,7 @@ contract PartyWithdrawTest is Test {
     function test_shouldRevertWithInsufficientBalance() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                Party.InsufficientBalance.selector,
+                DonationHolder.InsufficientBalance.selector,
                 10 ether,
                 10 ether + 1
             )
@@ -71,14 +72,14 @@ contract PartyWithdrawTest is Test {
     }
 
     function test_shouldRevertWithInvalidRecipient() public {
-        vm.expectRevert(Party.InvalidRecipient.selector);
+        vm.expectRevert(DonationHolder.InvalidRecipient.selector);
         vm.prank(president);
         party.withdraw(address(0), 1);
     }
 
     function test_shouldRevertWithWithdrawFailedAndKeepBalance() public {
         address rejecter = address(new RejectsEther());
-        vm.expectRevert(Party.WithdrawFailed.selector);
+        vm.expectRevert(DonationHolder.WithdrawFailed.selector);
         vm.prank(president);
         party.withdraw(rejecter, 1 ether);
         assertEq(address(party).balance, 10 ether);

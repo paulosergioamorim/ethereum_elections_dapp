@@ -1,29 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import {Ownable, Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import {IDonatable} from "./IDonatable.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {DonationHolder} from "./DonationHolder.sol";
+import {Candidate} from "./Candidate.sol";
 
-/// @dev O presidente é o `owner()`. O contrato não tem `receive` nem `fallback`,
-/// então só `donate()` aceita ETH.
-contract Party is Initializable, IDonatable, Ownable2Step {
+/// @dev O presidente é o `owner()`.
+contract Party is DonationHolder {
+    /// @dev `immutable` vive no bytecode, então os clones o enxergam.
+    address private immutable _candidateBase = address(new Candidate());
+
     string public name;
-    mapping(address => uint256) public donatedBy;
+    Candidate[] private _candidates;
+    mapping(address => bool) public isCandidate;
 
-    event Withdrawn(address indexed to, uint256 amount);
+    event CandidateCreated(address indexed candidate);
 
     error InvalidPresident();
     error EmptyPartyName();
-    error InvalidRecipient();
-    error InsufficientBalance(uint256 balance, uint256 amount);
-    error WithdrawFailed();
-    error RenounceDisabled();
-
-    /// @dev Só trava a implementação; os clones não executam o construtor.
-    constructor() Ownable(msg.sender) {
-        _disableInitializers();
-    }
 
     function initialize(
         address president,
@@ -41,36 +35,18 @@ contract Party is Initializable, IDonatable, Ownable2Step {
         _transferOwnership(president);
     }
 
-    function donate() external payable {
-        if (msg.value == 0) {
-            revert ZeroDonation();
-        }
-
-        donatedBy[msg.sender] += msg.value;
-        emit Donated(msg.sender, msg.value);
+    function createCandidate(
+        address candidate,
+        string calldata _name
+    ) external onlyOwner returns (Candidate created) {
+        created = Candidate(Clones.clone(_candidateBase));
+        created.initialize(candidate, _name, address(this));
+        _candidates.push(created);
+        isCandidate[address(created)] = true;
+        emit CandidateCreated(address(created));
     }
 
-    function withdraw(address to, uint256 amount) external onlyOwner {
-        if (to == address(0)) {
-            revert InvalidRecipient();
-        }
-
-        uint256 balance = address(this).balance;
-
-        if (amount > balance) {
-            revert InsufficientBalance(balance, amount);
-        }
-
-        (bool ok, ) = to.call{value: amount}("");
-
-        if (!ok) {
-            revert WithdrawFailed();
-        }
-
-        emit Withdrawn(to, amount);
-    }
-
-    function renounceOwnership() public pure override {
-        revert RenounceDisabled();
+    function candidates() external view returns (Candidate[] memory) {
+        return _candidates;
     }
 }

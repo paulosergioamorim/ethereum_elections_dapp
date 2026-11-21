@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Party} from "../contracts/Party.sol";
+import {DonationHolder} from "../contracts/DonationHolder.sol";
 
 contract PartyOwnershipTest is Test {
     Party party;
@@ -50,7 +51,7 @@ contract PartyOwnershipTest is Test {
     }
 
     function test_shouldRevertWithRenounceDisabled() public {
-        vm.expectRevert(Party.RenounceDisabled.selector);
+        vm.expectRevert(DonationHolder.RenounceDisabled.selector);
         vm.prank(president);
         party.renounceOwnership();
     }
