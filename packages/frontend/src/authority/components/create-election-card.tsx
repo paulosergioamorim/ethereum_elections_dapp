@@ -9,12 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthority, useCreateElection } from "@/factory";
-import {
-  defaultElectionForm,
-  validateElectionForm,
-  type ElectionFormErrors,
-  type ElectionFormValues,
-} from "../election-form";
+import { useFormState } from "@/lib/use-form-state";
+import { defaultElectionForm, validateElectionForm, type ElectionFormValues } from "../election-form";
 
 function FieldError({ id, message }: { id: string; message: string | undefined }) {
   return message ? (
@@ -28,8 +24,8 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
 export function CreateElectionCard({ registeredVoters }: { registeredVoters: number | undefined }) {
   const { reason } = useAuthority();
   const createElection = useCreateElection();
-  const [values, setValues] = useState<ElectionFormValues>(() => defaultElectionForm());
-  const [errors, setErrors] = useState<ElectionFormErrors>({});
+  // os padrões dependem do horário: `reset` usa os da renderização em que é chamado
+  const { values, errors, setErrors, update, reset } = useFormState<ElectionFormValues>(defaultElectionForm());
   const [created, setCreated] = useState<Address | undefined>();
 
   const blockedReason =
@@ -37,14 +33,6 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
     (registeredVoters === 0
       ? "Registre pelo menos um eleitor antes de criar a eleição."
       : undefined);
-
-  function update<Field extends keyof ElectionFormValues>(
-    field: Field,
-    value: ElectionFormValues[Field],
-  ) {
-    setValues((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({ ...current, [field]: undefined }));
-  }
 
   function onSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,7 +48,7 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
     createElection.mutate(input, {
       onSuccess: (address) => {
         setCreated(address);
-        setValues(defaultElectionForm());
+        reset();
       },
     });
   }

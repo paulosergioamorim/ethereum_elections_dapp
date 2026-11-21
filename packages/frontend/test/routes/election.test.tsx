@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { decodeFunctionData, getAddress, type Address } from "viem";
 import { describe, expect, it, vi } from "vitest";
-import { electionAbi } from "@/contracts";
+import { electionAbi, electionFactoryAbi, factoryAddress } from "@/contracts";
 import { REVEAL_BATCH_SIZE, type OpenedBallot } from "@/elections";
 import { openBallots } from "@/elections/tally-crypto";
 import { prepareVote } from "@/elections/vote-crypto";
@@ -14,6 +14,7 @@ import {
   secondsFromNow,
   type MockBallot,
   type MockElection,
+  type MockParty,
 } from "../helpers/mock-chain";
 import { alice, bob, carol, connectReturningUser, testIdentity } from "../helpers/mock-wallet";
 import { renderRoute } from "../helpers/render";
@@ -278,6 +279,194 @@ describe("Election (página da eleição)", () => {
       const options = await screen.findAllByRole("radio");
       expect(options).toHaveLength(1);
       expect(screen.getByRole("radio", { name: "Votar nulo" })).toBeInTheDocument();
+    });
+
+    describe("indicar candidato (presidente)", () => {
+      const partyAddress: Address = "0x90F79bf6EB2c4f870365E785982E1f101E93b906";
+      const anaAddress: Address = "0x976EA74026E726554dB657fA54763abd0C3a0aa9";
+      const biaAddress: Address = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955";
+      const otherElection: Address = "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f";
+
+      function alfa(overrides: Partial<MockParty> = {}): MockParty {
+        return {
+          address: partyAddress,
+          name: "Partido Alfa",
+          owner: alice,
+          candidates: [
+            { address: anaAddress, name: "Ana", owner: carol },
+            { address: biaAddress, name: "Bia", owner: bob },
+          ],
+          ...overrides,
+        };
+      }
+
+      function sentFactoryCall(wallet: { transactions: { data: `0x${string}` }[] }) {
+        return decodeFunctionData({ abi: electionFactoryAbi, data: wallet.transactions[0].data });
+      }
+
+      it("should not show the card to an account that presides no party", async () => {
+        mockChain({ owner: carol, parties: [alfa()], election: nominationElection() });
+        connectReturningUser({ accounts: [bob] });
+        renderRoute(`/elections/${electionAddress}`);
+
+        await screen.findByRole("heading", { name: "Representante da turma" });
+        await screen.findByRole("list", { name: "Candidatos indicados" });
+        expect(screen.queryByRole("heading", { name: "Indicar candidato" })).not.toBeInTheDocument();
+      });
+
+      it("should not show the card without a wallet", async () => {
+        mockChain({ owner: carol, parties: [alfa()], election: nominationElection() });
+        renderRoute(`/elections/${electionAddress}`);
+
+        await screen.findByRole("list", { name: "Candidatos indicados" });
+        expect(screen.queryByRole("heading", { name: "Indicar candidato" })).not.toBeInTheDocument();
+      });
+
+      it("should not show the card after the nominations end", async () => {
+        mockChain({
+          owner: carol,
+          parties: [alfa()],
+          election: nominationElection({ nominationEnd: secondsFromNow(-60) }),
+        });
+        connectReturningUser({ accounts: [alice] });
+        renderRoute(`/elections/${electionAddress}`);
+
+        await screen.findByRole("list", { name: "Candidatos indicados" });
+        expect(screen.queryByRole("heading", { name: "Indicar candidato" })).not.toBeInTheDocument();
+      });
+
+      it("should list the candidates of the party and nominate one", async () => {
+        const election = nominationElection({ candidates: [] });
+        mockChain({ owner: carol, parties: [alfa()], election });
+        const wallet = connectReturningUser({ accounts: [alice] });
+        const user = userEvent.setup();
+        renderRoute(`/elections/${electionAddress}`);
+
+        const card = (await screen.findByRole("heading", { name: "Indicar candidato" })).closest("section")!;
+        expect(await within(card).findByRole("button", { name: "Indicar Ana" })).toBeEnabled();
+        expect(within(card).getByRole("button", { name: "Indicar Bia" })).toBeEnabled();
+
+        // quando a transação for minerada, a lista da eleição passa a ter a Ana
+        election.candidates = [{ name: "Ana", partyName: "Partido Alfa", party: partyAddress, candidate: anaAddress }];
+        await user.click(within(card).getByRole("button", { name: "Indicar Ana" }));
+
+        await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+        expect(getAddress(wallet.transactions[0].to)).toBe(getAddress(factoryAddress));
+        expect(sentFactoryCall(wallet)).toMatchObject({
+          functionName: "nominate",
+          args: [electionAddress, anaAddress],
+        });
+
+        const list = await screen.findByRole("list", { name: "Candidatos indicados" });
+        expect(await within(list).findByText(/1\. Ana/)).toBeInTheDocument();
+        expect(await within(card).findByRole("button", { name: "Retirar indicação de Ana" })).toBeInTheDocument();
+      });
+
+      it("should replace the nominee of the party by nominating another candidate", async () => {
+        const election = nominationElection({
+          candidates: [{ name: "Ana", partyName: "Partido Alfa", party: partyAddress, candidate: anaAddress }],
+        });
+        mockChain({ owner: carol, parties: [alfa()], election });
+        const wallet = connectReturningUser({ accounts: [alice] });
+        const user = userEvent.setup();
+        renderRoute(`/elections/${electionAddress}`);
+
+        const card = (await screen.findByRole("heading", { name: "Indicar candidato" })).closest("section")!;
+        expect(await within(card).findByRole("button", { name: "Retirar indicação de Ana" })).toBeInTheDocument();
+        expect(within(card).getByText(/indicado nesta eleição/)).toBeInTheDocument();
+
+        election.candidates = [{ name: "Bia", partyName: "Partido Alfa", party: partyAddress, candidate: biaAddress }];
+        await user.click(within(card).getByRole("button", { name: "Indicar Bia" }));
+
+        await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+        expect(sentFactoryCall(wallet)).toMatchObject({ functionName: "nominate", args: [electionAddress, biaAddress] });
+        expect(await within(card).findByRole("button", { name: "Retirar indicação de Bia" })).toBeInTheDocument();
+      });
+
+      it("should withdraw the nomination of the party", async () => {
+        const election = nominationElection({
+          candidates: [{ name: "Ana", partyName: "Partido Alfa", party: partyAddress, candidate: anaAddress }],
+        });
+        mockChain({ owner: carol, parties: [alfa()], election });
+        const wallet = connectReturningUser({ accounts: [alice] });
+        const user = userEvent.setup();
+        renderRoute(`/elections/${electionAddress}`);
+
+        const card = (await screen.findByRole("heading", { name: "Indicar candidato" })).closest("section")!;
+        election.candidates = [];
+        await user.click(await within(card).findByRole("button", { name: "Retirar indicação de Ana" }));
+
+        await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+        expect(sentFactoryCall(wallet)).toMatchObject({
+          functionName: "withdraw",
+          args: [electionAddress, partyAddress],
+        });
+        expect(await screen.findByText("Nenhum candidato indicado ainda.")).toBeInTheDocument();
+      });
+
+      it("should mark a candidate held by another election as unavailable", async () => {
+        mockChain({
+          owner: carol,
+          parties: [
+            alfa({
+              candidates: [
+                { address: anaAddress, name: "Ana", owner: carol, heldBy: otherElection },
+                { address: biaAddress, name: "Bia", owner: bob },
+              ],
+            }),
+          ],
+          election: nominationElection({ candidates: [] }),
+          details: [
+            {
+              address: otherElection,
+              votingStart: secondsFromNow(60),
+              votingEnd: secondsFromNow(3_600),
+            },
+          ],
+        });
+        connectReturningUser({ accounts: [alice] });
+        renderRoute(`/elections/${electionAddress}`);
+
+        const card = (await screen.findByRole("heading", { name: "Indicar candidato" })).closest("section")!;
+        expect(await within(card).findByText(/Já concorre em outra eleição\./)).toBeInTheDocument();
+        expect(within(card).getByRole("button", { name: "Indicar Ana" })).toBeDisabled();
+        expect(within(card).getByRole("button", { name: "Indicar Bia" })).toBeEnabled();
+      });
+
+      it("should free a candidate whose other election is already in tally", async () => {
+        mockChain({
+          owner: carol,
+          parties: [
+            alfa({ candidates: [{ address: anaAddress, name: "Ana", owner: carol, heldBy: otherElection }] }),
+          ],
+          election: nominationElection({ candidates: [] }),
+          details: [
+            {
+              address: otherElection,
+              votingStart: secondsFromNow(-7_200),
+              votingEnd: secondsFromNow(-60),
+            },
+          ],
+        });
+        connectReturningUser({ accounts: [alice] });
+        renderRoute(`/elections/${electionAddress}`);
+
+        const card = (await screen.findByRole("heading", { name: "Indicar candidato" })).closest("section")!;
+        expect(await within(card).findByRole("button", { name: "Indicar Ana" })).toBeEnabled();
+        expect(within(card).queryByText(/Já concorre em outra eleição/)).not.toBeInTheDocument();
+      });
+
+      it("should say when the party has no candidates and link to the party page", async () => {
+        mockChain({ owner: carol, parties: [alfa({ candidates: [] })], election: nominationElection({ candidates: [] }) });
+        connectReturningUser({ accounts: [alice] });
+        renderRoute(`/elections/${electionAddress}`);
+
+        expect(await screen.findByText(/Este partido ainda não tem candidatos\./)).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "Criar candidato" })).toHaveAttribute(
+          "href",
+          `/parties/${partyAddress}`,
+        );
+      });
     });
 
     it("should offer to try again when the election cannot be read", async () => {

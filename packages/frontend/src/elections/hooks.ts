@@ -1,18 +1,21 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { parseEventLogs, type Address } from "viem";
-import { electionAbi } from "@/contracts";
+import { electionAbi, electionFactoryAbi, factoryAddress } from "@/contracts";
 import { useVoterStatus, voterStatusQueryOptions } from "@/factory";
 import { deriveVoterIdentity } from "@/identity/derive";
 import { freshBlockNumber, raiseBlockFloor } from "@/lib/block-floor";
 import { liveEvents, publicClient } from "@/lib/chain";
 import { runTransaction } from "@/lib/transaction";
 import { useNow } from "@/lib/use-now";
+import { shortAddress } from "@/lib/format";
+import { partyKeys } from "@/parties";
 import { requireWalletClient, useWallet } from "@/wallet";
 import { chunk, pendingReveals, REVEAL_BATCH_SIZE } from "./ballots";
 import { electionKeys } from "./keys";
 import { phaseAt } from "./phase";
 import {
+  candidateHoldQueryOptions,
   electionBallotsQueryOptions,
   electionGroupQueryOptions,
   electionQueryOptions,
@@ -357,4 +360,84 @@ export function useRevealBallots(election: ElectionDetails) {
   });
 
   return { ...mutation, progress };
+}
+
+/** Onde o candidato está preso, se estiver; sem endereço, não consulta. */
+export function useCandidateHold(candidate: Address | undefined) {
+  return useQuery(candidateHoldQueryOptions(candidate));
+}
+
+/** Relê o que as indicações mudam: a lista da eleição, onde cada candidato está preso e os saldos. */
+function refreshNominations(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: electionKeys.all }),
+    queryClient.invalidateQueries({ queryKey: partyKeys.all }),
+  ]);
+}
+
+/** `nominate`: o presidente indica um candidato do partido na eleição, trocando o indicado anterior. */
+export function useNominate(election: Address) {
+  const { walletClient } = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: { errorTitle: "Não foi possível indicar o candidato" },
+    mutationFn: async ({ candidate, name }: { candidate: Address; name: string }) => {
+      const client = requireWalletClient(walletClient);
+
+      return runTransaction(
+        {
+          signing: "Confirme a indicação na carteira.",
+          details: name,
+          success: "Candidato indicado.",
+        },
+        async () => {
+          // a simulação mostra o erro do contrato antes de abrir a carteira, sem gastar gás
+          const { request } = await publicClient.simulateContract({
+            account: client.account,
+            address: factoryAddress,
+            abi: electionFactoryAbi,
+            functionName: "nominate",
+            args: [election, candidate],
+          });
+
+          return client.writeContract(request);
+        },
+      );
+    },
+    onSuccess: () => refreshNominations(queryClient),
+  });
+}
+
+/** `withdraw` da factory: o presidente retira o indicado do partido; o saldo da candidatura fica sacável. */
+export function useWithdrawNomination(election: Address) {
+  const { walletClient } = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: { errorTitle: "Não foi possível retirar a indicação" },
+    mutationFn: async (party: Address) => {
+      const client = requireWalletClient(walletClient);
+
+      return runTransaction(
+        {
+          signing: "Confirme a retirada na carteira.",
+          details: `Partido ${shortAddress(party)}`,
+          success: "Indicação retirada.",
+        },
+        async () => {
+          const { request } = await publicClient.simulateContract({
+            account: client.account,
+            address: factoryAddress,
+            abi: electionFactoryAbi,
+            functionName: "withdraw",
+            args: [election, party],
+          });
+
+          return client.writeContract(request);
+        },
+      );
+    },
+    onSuccess: () => refreshNominations(queryClient),
+  });
 }

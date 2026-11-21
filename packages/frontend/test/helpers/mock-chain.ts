@@ -25,6 +25,8 @@ export type MockBallot = {
 
 export type MockCandidate = {
   address: Address;
+  /** A eleição que prende o candidato por uma indicação ativa (precisa estar em `details`). */
+  heldBy?: Address;
   name: string;
   /** A carteira do candidato. */
   owner: Address;
@@ -61,6 +63,9 @@ export type MockNominee = {
   balance?: bigint;
   /** Quanto cada conta já doou à candidatura. */
   donatedBy?: Record<string, bigint>;
+  /** O contrato `Candidate` do indicado e o partido. Padrão: endereços derivados. */
+  candidate?: Address;
+  party?: Address;
   /** `false` simula uma indicação retirada: fora de `candidates()`, sem aceitar doações. */
   active?: boolean;
 };
@@ -104,8 +109,8 @@ function nomineesOf(election: MockElection) {
       ...nominee,
       election: election.address,
       candidacy: derived("candidacy", election.address, index),
-      candidate: derived("candidate", election.address, index),
-      party: derived("party", election.address, index),
+      candidate: nominee.candidate ?? derived("candidate", election.address, index),
+      party: nominee.party ?? derived("party", election.address, index),
       partyName: nominee.partyName ?? `Partido ${nominee.name}`,
       owner: nominee.owner ?? derived("owner", election.address, index),
       active: nominee.active ?? true,
@@ -160,7 +165,8 @@ export function mockChain({
     );
   }
 
-  const allNominees = [main, ...details].flatMap((election) => (election ? nomineesOf(election) : []));
+  // recalculado a cada leitura: os testes mudam `candidates` para simular o que a transação minerada alterou
+  const nomineesNow = () => [main, ...details].flatMap((election) => (election ? nomineesOf(election) : []));
   const group = groupUntil(2n ** 64n);
   const createdAtBlock = main?.createdAtBlock ?? 10n;
   const electionRoot = main ? (groupUntil(createdAtBlock).root ?? 0n) : 0n;
@@ -181,12 +187,15 @@ export function mockChain({
     // leituras de uma eleição vão para a dela; sem dados próprios, para a `election` principal
     const election = details.find((detail) => sameAddress(address, detail.address)) ?? main;
 
+    const allNominees = nomineesNow();
     const byCandidacy = allNominees.find((nominee) => sameAddress(address, nominee.candidacy));
 
     switch (functionName) {
       // factory
       case "owner":
         return byCandidacy ? byCandidacy.owner : candidate ? candidate.item.owner : party ? party.owner : owner;
+      case "heldBy":
+        return listed.find(({ item }) => sameAddress(args?.[0], item.address))?.item.heldBy ?? zeroAddress;
       case "isActive":
         return allNominees.find((nominee) => sameAddress(args?.[0], nominee.candidacy))?.active ?? false;
       case "sem":
@@ -278,7 +287,7 @@ export function mockChain({
   }) as never);
 
   vi.mocked(publicClient.getBalance).mockImplementation((async ({ address }: { address: Address }) =>
-    allNominees.find((nominee) => sameAddress(address, nominee.candidacy))?.balance ??
+    nomineesNow().find((nominee) => sameAddress(address, nominee.candidacy))?.balance ??
     (parties.find((party) => sameAddress(address, party.address)) ??
       parties.flatMap((party) => party.candidates ?? []).find((item) => sameAddress(address, item.address)))
       ?.balance ?? 0n) as never);

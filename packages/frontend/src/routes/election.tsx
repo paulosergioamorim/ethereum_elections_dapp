@@ -9,6 +9,7 @@ import {
   ElectionNotFoundError,
   ElectionStats,
   formatTimestamp,
+  NominateCard,
   NomineesCard,
   ResultsCard,
   useElection,
@@ -92,6 +93,8 @@ export function Election() {
         <VoteCard election={data} />
         <ResultsCard election={data} />
       </div>
+
+      <NominateCard election={data} />
 
       <NomineesCard election={data} />
 

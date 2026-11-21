@@ -1,5 +1,5 @@
 import { queryOptions, skipToken } from "@tanstack/react-query";
-import type { Address } from "viem";
+import { zeroAddress, type Address } from "viem";
 import {
   candidacyAbi,
   candidateAbi,
@@ -264,5 +264,44 @@ export function openedBallotsQueryOptions(
     queryKey: [...electionKeys.opened(election?.address ?? "none"), ballots?.length ?? 0],
     queryFn: ballots ? () => openInBrowser(ballots) : skipToken,
     staleTime: Infinity,
+  });
+}
+
+/** A eleição que prende um candidato por uma indicação ativa, e quando ela entra em apuração. */
+type CandidateHold = {
+  election: Address;
+  /** Timestamp Unix em segundos. */
+  votingEnd: bigint;
+};
+
+async function fetchCandidateHold(candidate: Address): Promise<CandidateHold | undefined> {
+  const blockNumber = await freshBlockNumber();
+  const election = await publicClient.readContract({
+    address: factoryAddress,
+    abi: electionFactoryAbi,
+    functionName: "heldBy",
+    args: [candidate],
+    blockNumber,
+  });
+
+  if (election === zeroAddress) {
+    return undefined;
+  }
+
+  const votingEnd = await publicClient.readContract({
+    address: election,
+    abi: electionAbi,
+    functionName: "votingEnd",
+    blockNumber,
+  });
+
+  return { election, votingEnd };
+}
+
+/** Onde o candidato está preso (se estiver); sem endereço, não consulta. */
+export function candidateHoldQueryOptions(candidate: Address | undefined) {
+  return queryOptions({
+    queryKey: electionKeys.hold(candidate ?? "none"),
+    queryFn: candidate ? () => fetchCandidateHold(candidate) : skipToken,
   });
 }

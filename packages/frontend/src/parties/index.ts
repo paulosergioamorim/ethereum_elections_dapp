@@ -10,6 +10,15 @@ export {
   type CreatePartyErrors,
   type CreatePartyValues,
 } from "./forms";
-export { useCandidacy, useCandidate, useCreateParty, useDonated, useParties, useParty } from "./hooks";
+export {
+  useCandidacy,
+  useCandidate,
+  useCreateParty,
+  useDonated,
+  useParties,
+  useParty,
+  usePartyCandidates,
+} from "./hooks";
+export { partyKeys } from "./keys";
 export { isSameAccount } from "./president";
-export { CandidateNotFoundError, PartyNotFoundError } from "./queries";
+export { CandidateNotFoundError, PartyNotFoundError, partyQueryOptions } from "./queries";
