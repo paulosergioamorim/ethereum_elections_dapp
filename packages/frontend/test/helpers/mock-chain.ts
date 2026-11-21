@@ -23,6 +23,19 @@ export type MockBallot = {
   revealedMeanwhile?: boolean;
 };
 
+export type MockCandidate = {
+  address: Address;
+  name: string;
+  /** A carteira do candidato. */
+  owner: Address;
+  /** Saldo em wei. Padrão: 0. */
+  balance?: bigint;
+  /** Quanto cada conta já doou. */
+  donatedBy?: Record<string, bigint>;
+  /** `party()` que o contrato responde. Padrão: o partido que o lista; outro valor simula um contrato forjado. */
+  claimedParty?: Address;
+};
+
 export type MockParty = {
   address: Address;
   name: string;
@@ -33,6 +46,8 @@ export type MockParty = {
   balance?: bigint;
   /** Quanto cada conta já doou. */
   donatedBy?: Record<string, bigint>;
+  /** Candidatos do partido, na ordem de criação. */
+  candidates?: MockCandidate[];
 };
 
 export type MockElection = {
@@ -120,6 +135,8 @@ export function mockChain({
     args?: readonly unknown[];
   }) => {
     const party = parties.find((candidate) => sameAddress(address, candidate.address));
+    const listed = parties.flatMap((holder) => (holder.candidates ?? []).map((item) => ({ item, holder })));
+    const candidate = listed.find(({ item }) => sameAddress(address, item.address));
     const voter = voters.find((candidate) => sameAddress(args?.[0], candidate.address));
     // leituras de uma eleição vão para a dela; sem dados próprios, para a `election` principal
     const election = details.find((detail) => sameAddress(address, detail.address)) ?? main;
@@ -127,7 +144,7 @@ export function mockChain({
     switch (functionName) {
       // factory
       case "owner":
-        return party ? party.owner : owner;
+        return candidate ? candidate.item.owner : party ? party.owner : owner;
       case "sem":
         return semaphore;
       case "groupId":
@@ -147,11 +164,15 @@ export function mockChain({
         return parties.some((candidate) => sameAddress(args?.[0], candidate.address));
       // party
       case "name":
-        return party?.name;
+        return candidate ? candidate.item.name : party?.name;
+      case "party":
+        return candidate ? (candidate.item.claimedParty ?? candidate.holder.address) : undefined;
+      case "isCandidate":
+        return (party?.candidates ?? []).some((item) => sameAddress(args?.[0], item.address));
       case "pendingOwner":
         return party?.pendingOwner ?? zeroAddress;
       case "donatedBy": {
-        const donated = Object.entries(party?.donatedBy ?? {}).find(([account]) =>
+        const donated = Object.entries((candidate ? candidate.item.donatedBy : party?.donatedBy) ?? {}).find(([account]) =>
           sameAddress(args?.[0], account as Address),
         );
 
@@ -168,7 +189,7 @@ export function mockChain({
       case "title":
         return election?.title ?? "Representante da turma";
       case "candidates":
-        return election?.candidates ?? ["Ana", "Bruno"];
+        return party ? (party.candidates ?? []).map((item) => item.address) : (election?.candidates ?? ["Ana", "Bruno"]);
       case "votingStart":
         return election?.votingStart;
       case "votingEnd":
@@ -196,7 +217,9 @@ export function mockChain({
   }) as never);
 
   vi.mocked(publicClient.getBalance).mockImplementation((async ({ address }: { address: Address }) =>
-    parties.find((candidate) => sameAddress(address, candidate.address))?.balance ?? 0n) as never);
+    (parties.find((party) => sameAddress(address, party.address)) ??
+      parties.flatMap((party) => party.candidates ?? []).find((item) => sameAddress(address, item.address)))
+      ?.balance ?? 0n) as never);
 
   const events = [
     ...voters.map((voter, index) => ({

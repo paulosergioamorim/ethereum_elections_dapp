@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { partyAbi } from "@/contracts";
 import { publicClient } from "@/lib/chain";
 import { shortAddress } from "@/lib/format";
-import { mockChain, type MockParty } from "../helpers/mock-chain";
+import { mockChain, type MockCandidate, type MockParty } from "../helpers/mock-chain";
 import { alice, bob, carol, connectReturningUser, type MockWallet } from "../helpers/mock-wallet";
 import { renderRoute } from "../helpers/render";
 
@@ -289,6 +289,111 @@ describe("Party (página do partido)", () => {
 
       expect(screen.queryByLabelText("Destino")).not.toBeInTheDocument();
       expect(screen.queryByLabelText("Endereço do novo presidente")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("candidatos", () => {
+    const one: MockCandidate = { address: "0x976EA74026E726554dB657fA54763abd0C3a0aa9", name: "Candidato Um", owner: alice, balance: 10n ** 18n };
+    const two: MockCandidate = { address: "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955", name: "Candidato Dois", owner: carol };
+
+    it("should list the candidates, newest first, with name, wallet, balance and a link", async () => {
+      mockChain({ owner: carol, parties: [newParty({ candidates: [one, two] })] });
+      renderRoute(`/parties/${party}`);
+
+      const links = await screen.findAllByRole("link", { name: /Candidato/ });
+      expect(links.map((link) => link.getAttribute("href"))).toEqual([`/candidates/${two.address}`, `/candidates/${one.address}`]);
+      expect(within(links[1]).getByText("Candidato Um")).toBeInTheDocument();
+      expect(within(links[1]).getByText(shortAddress(alice))).toBeInTheDocument();
+      expect(within(links[1]).getByText("1 ETH")).toBeInTheDocument();
+    });
+
+    it("should show the empty state when the party has no candidates", async () => {
+      mockChain({ owner: carol, parties: [newParty()] });
+      renderRoute(`/parties/${party}`);
+
+      expect(await screen.findByText("Nenhum candidato criado ainda.")).toBeInTheDocument();
+    });
+
+    it("should show an error with a retry button when reading the candidates fails", async () => {
+      mockChain({ owner: carol, parties: [newParty({ candidates: [one] })] });
+      const read = vi.mocked(publicClient.readContract).getMockImplementation()!;
+      vi.mocked(publicClient.readContract).mockImplementation((async (args: { functionName: string }) => {
+        if (args.functionName === "candidates") {
+          throw new Error("rpc fora do ar");
+        }
+
+        return read(args as never);
+      }) as never);
+      const user = userEvent.setup();
+      renderRoute(`/parties/${party}`);
+
+      expect(await screen.findByText("Não foi possível carregar os candidatos.")).toBeInTheDocument();
+      vi.mocked(publicClient.readContract).mockImplementation(read);
+      await user.click(screen.getByRole("button", { name: "Tentar de novo" }));
+
+      expect(await screen.findByText("Candidato Um")).toBeInTheDocument();
+    });
+
+    async function openAs(account: Address | undefined, mock: MockParty) {
+      mockChain({ owner: carol, parties: [mock] });
+      const wallet = account ? connectReturningUser({ accounts: [account] }) : undefined;
+      const user = userEvent.setup();
+      renderRoute(`/parties/${party}`);
+      await screen.findByRole("heading", { name: "Alfa" });
+
+      return { wallet, user };
+    }
+
+    it("should show the create form only to the president", async () => {
+      await openAs(bob, newParty({ owner: bob }));
+
+      expect(await screen.findByLabelText("Carteira do candidato")).toBeInTheDocument();
+    });
+
+    it.each([
+      ["another account", alice],
+      ["no wallet", undefined],
+    ])("should not show the create form to %s", async (_, account) => {
+      await openAs(account, newParty({ owner: bob }));
+      await screen.findByText("Nenhum candidato criado ainda.");
+
+      expect(screen.queryByLabelText("Carteira do candidato")).not.toBeInTheDocument();
+    });
+
+    it("should send createCandidate and list the new candidate once mined", async () => {
+      const mock = newParty({ owner: bob, candidates: [] });
+      const { wallet, user } = await openAs(bob, mock);
+      vi.mocked(publicClient.waitForTransactionReceipt).mockImplementationOnce((async ({ hash }: { hash: string }) => {
+        mock.candidates = [one];
+
+        return { status: "success", transactionHash: hash, logs: [] };
+      }) as never);
+
+      await user.type(await screen.findByLabelText("Nome do candidato"), "  Candidato Um ");
+      await user.type(screen.getByLabelText("Carteira do candidato"), alice);
+      await user.click(screen.getByRole("button", { name: "Criar candidato" }));
+
+      await waitFor(() => expect(wallet!.transactions).toHaveLength(1));
+      expect(sentCall(wallet!)).toMatchObject({ to: party, functionName: "createCandidate", args: [alice, "Candidato Um"] });
+      expect(await screen.findByRole("link", { name: /Candidato Um/ })).toHaveAttribute("href", `/candidates/${one.address}`);
+    });
+
+    it.each([
+      ["wallet is not an address", "0x123", "Candidato Um", /endereço válido/],
+      ["wallet is the zero address", "0x0000000000000000000000000000000000000000", "Candidato Um", /endereço zero/],
+      ["name is empty", alice, "", /Informe o nome do candidato\./],
+      ["name is whitespace", alice, "   ", /Informe o nome do candidato\./],
+    ])("should not open the wallet when the %s", async (_, wallet, name, message) => {
+      const { wallet: sent, user } = await openAs(bob, newParty({ owner: bob }));
+
+      await user.type(await screen.findByLabelText("Carteira do candidato"), wallet);
+      if (name) {
+        await user.type(screen.getByLabelText("Nome do candidato"), name);
+      }
+      await user.click(screen.getByRole("button", { name: "Criar candidato" }));
+
+      expect(await screen.findByText(message, { selector: "p.text-destructive" })).toBeInTheDocument();
+      expect(sent!.transactions).toHaveLength(0);
     });
   });
 });

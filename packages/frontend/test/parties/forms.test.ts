@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateCreatePartyForm } from "@/parties";
+import { validateCreateCandidateForm, validateCreatePartyForm } from "@/parties";
 import { alice } from "../helpers/mock-wallet";
 
 describe("validateCreatePartyForm", () => {
@@ -41,5 +41,32 @@ describe("validateCreatePartyForm", () => {
     expect(validateCreatePartyForm({ president: alice, name: "   " }).errors.name).toBe(
       "Informe o nome do partido.",
     );
+  });
+});
+
+describe("validateCreateCandidateForm", () => {
+  it("should build the createCandidate input, trimming the name", () => {
+    expect(validateCreateCandidateForm({ candidate: alice, name: "  Candidato Um " })).toEqual({
+      errors: {},
+      input: { candidate: alice, name: "Candidato Um" },
+    });
+  });
+
+  it.each(["", "0x1234", "alice", "0x0000000000000000000000000000000000000000"])(
+    "should reject %j as the candidate wallet",
+    (candidate) => {
+      const { errors, input } = validateCreateCandidateForm({ candidate, name: "Candidato Um" });
+
+      expect(errors.candidate).toBeDefined();
+      expect(errors.name).toBeUndefined();
+      expect(input).toBeUndefined();
+    },
+  );
+
+  it.each(["", "   "])("should flag the name %j", (name) => {
+    const { errors, input } = validateCreateCandidateForm({ candidate: alice, name });
+
+    expect(errors.name).toBe("Informe o nome do candidato.");
+    expect(input).toBeUndefined();
   });
 });

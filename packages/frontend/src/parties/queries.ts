@@ -1,6 +1,6 @@
 import { queryOptions, skipToken } from "@tanstack/react-query";
 import type { Address } from "viem";
-import { electionFactoryAbi, factoryAddress, partyAbi } from "@/contracts";
+import { candidateAbi, electionFactoryAbi, factoryAddress, partyAbi } from "@/contracts";
 import { freshBlockNumber } from "@/lib/block-floor";
 import { publicClient } from "@/lib/chain";
 import { partyKeys } from "./keys";
@@ -88,5 +88,83 @@ export function donatedQueryOptions(address: Address | undefined, account: Addre
               blockNumber: await freshBlockNumber(),
             })
         : skipToken,
+  });
+}
+
+/** Endereços dos candidatos de um partido, na ordem de criação. */
+export function partyCandidatesQueryOptions(party: Address) {
+  return queryOptions({
+    queryKey: partyKeys.candidates(party),
+    queryFn: async () =>
+      publicClient.readContract({
+        address: party,
+        abi: partyAbi,
+        functionName: "candidates",
+        blockNumber: await freshBlockNumber(),
+      }),
+  });
+}
+
+type CandidateDetails = {
+  address: Address;
+  name: string;
+  /** O partido que criou o candidato. */
+  party: Address;
+  /** A carteira do candidato: quem saca. */
+  owner: Address;
+  /** Saldo em wei. */
+  balance: bigint;
+};
+
+/** O endereço não é um candidato de um partido desta factory. */
+class CandidateNotFoundError extends Error {
+  constructor(address: Address) {
+    super(`O endereço ${address} não é um candidato desta factory.`);
+    this.name = "CandidateNotFoundError";
+  }
+}
+
+async function fetchCandidate(address: Address): Promise<CandidateDetails> {
+  const blockNumber = await freshBlockNumber();
+  const read = { address, abi: candidateAbi, blockNumber } as const;
+  // `party()` de um contrato qualquer pode falhar ou mentir: só vale se a factory e o partido confirmarem
+  const party = await publicClient.readContract({ ...read, functionName: "party" }).catch(() => undefined);
+
+  if (!party) {
+    throw new CandidateNotFoundError(address);
+  }
+
+  const [isParty, isCandidate] = await Promise.all([
+    publicClient.readContract({
+      address: factoryAddress,
+      abi: electionFactoryAbi,
+      functionName: "isParty",
+      args: [party],
+      blockNumber,
+    }),
+    publicClient
+      .readContract({ address: party, abi: partyAbi, functionName: "isCandidate", args: [address], blockNumber })
+      .catch(() => false),
+  ]);
+
+  if (!isParty || !isCandidate) {
+    throw new CandidateNotFoundError(address);
+  }
+
+  const [name, owner, balance] = await Promise.all([
+    publicClient.readContract({ ...read, functionName: "name" }),
+    publicClient.readContract({ ...read, functionName: "owner" }),
+    publicClient.getBalance({ address, blockNumber }),
+  ]);
+
+  return { address, name, party, owner, balance };
+}
+
+/** Dados de um candidato de um partido da factory; sem endereço, não consulta. */
+export function candidateQueryOptions(address: Address | undefined) {
+  return queryOptions({
+    queryKey: partyKeys.candidate(address ?? ""),
+    queryFn: address ? () => fetchCandidate(address) : skipToken,
+    retry: (failures: number, error: Error) => !(error instanceof CandidateNotFoundError) && failures < 3,
   });
 }

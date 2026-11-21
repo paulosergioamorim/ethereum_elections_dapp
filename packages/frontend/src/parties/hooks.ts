@@ -6,7 +6,12 @@ import { formatEth, shortAddress } from "@/lib/format";
 import { runTransaction } from "@/lib/transaction";
 import { requireWalletClient, useWallet } from "@/wallet";
 import { partyKeys } from "./keys";
-import { donatedQueryOptions, partiesQueryOptions, partyQueryOptions } from "./queries";
+import {
+  donatedQueryOptions,
+  partiesQueryOptions,
+  partyCandidatesQueryOptions,
+  partyQueryOptions,
+} from "./queries";
 
 /** Partidos criados pela factory (leitura pública, sem carteira). */
 export function useParties() {
@@ -183,6 +188,51 @@ export function useCreateParty() {
       });
 
       return created?.args.party;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: partyKeys.all }),
+  });
+}
+
+/** Candidatos de um partido (leitura pública, sem carteira). */
+export function usePartyCandidates(party: Address) {
+  return useQuery(partyCandidatesQueryOptions(party));
+}
+
+export type CreateCandidateInput = {
+  /** A carteira do candidato. */
+  candidate: Address;
+  name: string;
+};
+
+/** `createCandidate`: o presidente cria um candidato do partido. */
+export function useCreateCandidate(party: Address) {
+  const { walletClient } = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: { errorTitle: "Não foi possível criar o candidato" },
+    mutationFn: async ({ candidate, name }: CreateCandidateInput) => {
+      const client = requireWalletClient(walletClient);
+
+      return runTransaction(
+        {
+          signing: "Confirme a criação do candidato na carteira.",
+          details: name,
+          success: "Candidato criado.",
+        },
+        async () => {
+          // a simulação mostra o erro do contrato antes de abrir a carteira, sem gastar gás
+          const { request } = await publicClient.simulateContract({
+            account: client.account,
+            address: party,
+            abi: partyAbi,
+            functionName: "createCandidate",
+            args: [candidate, name],
+          });
+
+          return client.writeContract(request);
+        },
+      );
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: partyKeys.all }),
   });

@@ -1,6 +1,6 @@
 import { BaseError, ContractFunctionRevertedError, encodeErrorResult } from "viem";
 import { describe, expect, it } from "vitest";
-import { electionAbi, electionFactoryAbi, partyAbi, semaphoreAbi } from "@/contracts";
+import { candidateAbi, electionAbi, electionFactoryAbi, partyAbi, semaphoreAbi } from "@/contracts";
 import { contractErrorName } from "@/contracts/errors";
 import { errorMessage } from "@/lib/errors";
 import { alice } from "../helpers/mock-wallet";
@@ -41,7 +41,7 @@ describe("contractErrorName", () => {
   it.each(["InvalidPresident", "EmptyPartyName"] as const)(
     "should read %s from createParty and translate it",
     (errorName) => {
-      const error = factoryRevert(encodeErrorResult({ abi: electionFactoryAbi, errorName }), "createParty");
+      const error = factoryRevert(encodeErrorResult({ abi: partyAbi, errorName }), "createParty");
 
       expect(contractErrorName(error)).toBe(errorName);
       expect(errorMessage(error)).not.toBe(errorName);
@@ -52,8 +52,23 @@ describe("contractErrorName", () => {
     ["InvalidPresident", "O presidente não pode ser o endereço zero."],
     ["EmptyPartyName", "Informe o nome do partido."],
   ] as const)("should show %s as the Portuguese message", (errorName, message) => {
-    const error = factoryRevert(encodeErrorResult({ abi: electionFactoryAbi, errorName }), "createParty");
+    const error = factoryRevert(encodeErrorResult({ abi: partyAbi, errorName }), "createParty");
 
+    expect(errorMessage(error)).toBe(message);
+  });
+
+  it.each([
+    ["InvalidCandidate", "A carteira do candidato não pode ser o endereço zero."],
+    ["EmptyCandidateName", "Informe o nome do candidato."],
+  ] as const)("should decode %s from createCandidate, raised by the Candidate, as the Portuguese message", (errorName, message) => {
+    // o erro nasce no Candidate e sobe pelo Party, cuja ABI não o lista
+    const error = new ContractFunctionRevertedError({
+      abi: partyAbi,
+      data: encodeErrorResult({ abi: candidateAbi, errorName }),
+      functionName: "createCandidate",
+    });
+
+    expect(contractErrorName(error)).toBe(errorName);
     expect(errorMessage(error)).toBe(message);
   });
 

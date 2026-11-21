@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatEth, shortAddress } from "@/lib/format";
 import {
   AcceptCard,
+  CandidatesSection,
   DonateCard,
   HandoverCard,
   isSameAccount,
@@ -115,6 +116,8 @@ export function Party() {
         )}
         {hasPending && isSameAccount(account, data.pendingOwner) && <AcceptCard party={data.address} />}
       </div>
+
+      <CandidatesSection party={data.address} isPresident={isPresident} />
     </div>
   );
 }

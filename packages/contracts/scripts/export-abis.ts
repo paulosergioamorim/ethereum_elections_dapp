@@ -1,5 +1,5 @@
 // Copia as ABIs compiladas para o frontend, como `as const` (o viem infere os tipos das chamadas).
-// Rode depois de mudar os contratos: pnpm export-abis (o `hardhat run` compila antes).
+// Rode depois de mudar os contratos: pnpm contracts:export-abis (o `hardhat run` compila antes).
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -7,6 +7,7 @@ const contracts = [
   { name: "electionFactoryAbi", artifact: "artifacts/contracts/ElectionFactory.sol/ElectionFactory.json" },
   { name: "electionAbi", artifact: "artifacts/contracts/Election.sol/Election.json" },
   { name: "partyAbi", artifact: "artifacts/contracts/Party.sol/Party.json" },
+  { name: "candidateAbi", artifact: "artifacts/contracts/Candidate.sol/Candidate.json" },
   // eventos do grupo (MemberAdded/MemberRemoved) e erros do LeanIMT
   { name: "semaphoreAbi", artifact: "artifacts/@semaphore-protocol/contracts/Semaphore.sol/Semaphore.json" },
 ];
@@ -16,7 +17,7 @@ const packageRoot = path.resolve(import.meta.dirname, "..");
 const output = path.resolve(packageRoot, "../frontend/src/contracts/abis.ts");
 
 const parts = [
-  "// Gerado por scripts/export-abis.ts a partir de artifacts/. Não edite à mão: rode `pnpm export-abis`.",
+  "// Gerado por scripts/export-abis.ts a partir de artifacts/. Não edite à mão: rode `pnpm contracts:export-abis`.",
   "",
 ];
 

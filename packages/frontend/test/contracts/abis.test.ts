@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { electionFactoryAbi, partyAbi } from "@/contracts";
+import { candidateAbi, electionFactoryAbi, partyAbi } from "@/contracts";
 
 function names(abi: readonly { type: string; name?: string }[], type: string) {
   return abi.filter((item) => item.type === type).map((item) => item.name);
@@ -16,6 +16,19 @@ describe("exported ABIs", () => {
   it("should export the Party ABI the pages call", () => {
     expect(names(partyAbi, "function")).toEqual(
       expect.arrayContaining(["donate", "withdraw", "donatedBy", "name", "owner", "pendingOwner", "transferOwnership", "acceptOwnership"]),
+    );
+  });
+
+  it("should give the Party createCandidate, candidates, isCandidate and CandidateCreated", () => {
+    expect(names(partyAbi, "function")).toEqual(
+      expect.arrayContaining(["createCandidate", "candidates", "isCandidate"]),
+    );
+    expect(names(partyAbi, "event")).toContain("CandidateCreated");
+  });
+
+  it("should export the Candidate ABI the pages call", () => {
+    expect(names(candidateAbi, "function")).toEqual(
+      expect.arrayContaining(["donate", "withdraw", "donatedBy", "name", "owner", "party"]),
     );
   });
 });
