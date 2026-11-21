@@ -1,14 +1,14 @@
 // Implanta a ElectionFactory na Sepolia e atualiza as variáveis do GitHub Actions
 // (VITE_FACTORY_ADDRESS e VITE_FACTORY_DEPLOY_BLOCK) com o `gh`.
-// Uso: pnpm deploy:sepolia <deployment-id>   (ex.: v4_0_0; o id precisa ser novo para criar outro contrato)
+// Uso: DEPLOYMENT_ID=v4_0_0 pnpm deploy:sepolia   (o `hardhat run` não repassa argumentos; o id precisa ser novo para criar outro contrato)
 // Depois, dispare o deploy do frontend (push na main ou `gh workflow run deploy.yml`).
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-const deploymentId = process.argv[2];
+const deploymentId = process.env.DEPLOYMENT_ID;
 if (!deploymentId) {
-  console.error("Uso: pnpm deploy:sepolia <deployment-id>");
+  console.error("Uso: DEPLOYMENT_ID=<id> pnpm deploy:sepolia");
   process.exit(1);
 }
 

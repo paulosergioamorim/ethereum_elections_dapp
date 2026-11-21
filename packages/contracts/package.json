@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "deploy:sepolia": "node --experimental-strip-types scripts/deploy-sepolia.ts",
+    "deploy:sepolia": "hardhat run scripts/deploy-sepolia.ts",
     "export-abis": "hardhat run scripts/export-abis.ts"
   },
   "devDependencies": {
