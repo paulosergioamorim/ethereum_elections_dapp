@@ -3,7 +3,6 @@ import {
   BadgeCheckIcon,
   ListOrderedIcon,
   RefreshCwIcon,
-  UsersIcon,
   VoteIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -66,17 +65,12 @@ export function Elections() {
       />
 
       {/* "—" enquanto o dado não estiver disponível */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <StatCard
           icon={VoteIcon}
           label="Eleições"
           value={elections.data?.length}
           caption="Criadas pela autoridade eleitoral"
-        />
-        <StatCard
-          icon={UsersIcon}
-          label="Eleitores registrados"
-          caption="Identidades anônimas registradas"
         />
         <StatCard
           icon={BadgeCheckIcon}
