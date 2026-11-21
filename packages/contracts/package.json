@@ -9,6 +9,7 @@
     "node:local": "hardhat node",
     "deploy:local": "hardhat run scripts/deploy-local.ts --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy-sepolia.ts",
+    "update-vars:sepolia": "hardhat run scripts/update-sepolia-vars.ts",
     "export-abis": "hardhat run scripts/export-abis.ts"
   },
   "devDependencies": {
