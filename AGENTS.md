@@ -12,21 +12,15 @@ Each package has its own `package.json` and `tsconfig.json`. The root only holds
 deploy (`.github/workflows/`) and tooling (`.fallowrc.json`) config.
 
 When working in `packages/contracts`, read `packages/contracts/AGENTS.md`.
+When working in `packages/frontend`, read `packages/frontend/AGENTS.md`.
 
 ## Root scripts
 
 ```
-pnpm dev               frontend dev server
-pnpm build:frontend    typecheck + production build of the frontend
-pnpm test:frontend     frontend tests (vitest)
-pnpm compile           compile the contracts
-pnpm test:contracts    Solidity + TypeScript integration tests
-pnpm export-abis       copy compiled ABIs to packages/frontend/src/contracts/abis.ts
+pnpm frontend:dev              frontend dev server
+pnpm frontend:build            typecheck + production build of the frontend
+pnpm frontend:test             frontend tests (vitest)
+pnpm contracts:compile         compile the contracts
+pnpm contracts:test            Solidity + TypeScript integration tests
+pnpm contracts:export-abis     copy compiled ABIs to packages/frontend/src/contracts/abis.ts
 ```
-
-## Frontend features
-
-Whenever a feature adds or changes something in the frontend (screens, routes, forms, components the
-user sees), test it in a real browser before calling it done: start the dev server (`pnpm dev`) and
-drive the app with the Playwright MCP tools (`mcp__playwright__browser_*`) in **Firefox**. Vitest
-alone is not enough. Report what was exercised (and any flow that couldn't be, e.g. no wallet).
