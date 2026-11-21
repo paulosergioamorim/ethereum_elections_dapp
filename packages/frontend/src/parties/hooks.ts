@@ -89,6 +89,60 @@ export function useWithdraw(party: Address) {
   });
 }
 
+/** Chamada do partido que só muda quem preside (`transferOwnership` e `acceptOwnership`). */
+function usePresidencyCall<Input>(
+  party: Address,
+  notice: (input: Input) => { signing: string; details?: string; success: string },
+  call: (input: Input) => { functionName: "transferOwnership"; args: readonly [Address] } | { functionName: "acceptOwnership"; args?: undefined },
+  errorTitle: string,
+) {
+  const { walletClient } = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: { errorTitle },
+    mutationFn: async (input: Input) => {
+      const client = requireWalletClient(walletClient);
+
+      return runTransaction(notice(input), async () => {
+        const { request } = await publicClient.simulateContract({
+          account: client.account,
+          address: party,
+          abi: partyAbi,
+          ...call(input),
+        } as never);
+
+        return client.writeContract(request as never);
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: partyKeys.all }),
+  });
+}
+
+/** `transferOwnership`: o presidente indica o sucessor, que só assume ao aceitar. */
+export function useTransferPresidency(party: Address) {
+  return usePresidencyCall<Address>(
+    party,
+    (successor) => ({
+      signing: "Confirme a indicação na carteira.",
+      details: `Sucessor: ${successor}`,
+      success: "Sucessor indicado.",
+    }),
+    (successor) => ({ functionName: "transferOwnership", args: [successor] }),
+    "Não foi possível passar a presidência",
+  );
+}
+
+/** `acceptOwnership`: o sucessor indicado assume a presidência. */
+export function useAcceptPresidency(party: Address) {
+  return usePresidencyCall<void>(
+    party,
+    () => ({ signing: "Confirme a aceitação na carteira.", success: "Você é o novo presidente." }),
+    () => ({ functionName: "acceptOwnership" }),
+    "Não foi possível aceitar a presidência",
+  );
+}
+
 export type CreatePartyInput = {
   president: Address;
   name: string;

@@ -203,4 +203,92 @@ describe("Party (página do partido)", () => {
       expect(wallet!.transactions).toHaveLength(0);
     });
   });
+
+  describe("passar a presidência", () => {
+    async function openAs(account: Address, mock: MockParty) {
+      mockChain({ owner: carol, parties: [mock] });
+      const wallet = connectReturningUser({ accounts: [account] });
+      const user = userEvent.setup();
+      renderRoute(`/parties/${party}`);
+      await screen.findByRole("heading", { name: "Alfa" });
+
+      return { wallet, user };
+    }
+
+    it("should send transferOwnership and show the pending president while the president stays", async () => {
+      const mock = newParty({ owner: bob });
+      const { wallet, user } = await openAs(bob, mock);
+      vi.mocked(publicClient.waitForTransactionReceipt).mockImplementationOnce((async ({ hash }: { hash: string }) => {
+        mock.pendingOwner = alice;
+
+        return { status: "success", transactionHash: hash, logs: [] };
+      }) as never);
+
+      await user.type(await screen.findByLabelText("Endereço do novo presidente"), alice);
+      await user.click(screen.getByRole("button", { name: "Passar a presidência" }));
+
+      await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+      expect(sentCall(wallet)).toMatchObject({ to: party, functionName: "transferOwnership", args: [alice] });
+      expect(await screen.findByText(/Presidente pendente:/)).toHaveTextContent(alice);
+      expect(within(stat("Presidente")).getByText(shortAddress(bob))).toBeInTheDocument();
+      expect(screen.getByLabelText("Destino")).toBeInTheDocument();
+    });
+
+    it.each([
+      ["not an address", "0x123"],
+      ["the zero address", "0x0000000000000000000000000000000000000000"],
+    ])("should not open the wallet when the new president is %s", async (_, successor) => {
+      const { wallet, user } = await openAs(bob, newParty({ owner: bob }));
+
+      await user.type(await screen.findByLabelText("Endereço do novo presidente"), successor);
+      await user.click(screen.getByRole("button", { name: "Passar a presidência" }));
+
+      expect(await screen.findByText(/endereço/i, { selector: "p.text-destructive" })).toBeInTheDocument();
+      expect(wallet.transactions).toHaveLength(0);
+    });
+
+    it("should not offer the handover form to anyone but the president", async () => {
+      await openAs(alice, newParty({ owner: bob }));
+      await screen.findByLabelText("Valor em ETH");
+
+      expect(screen.queryByLabelText("Endereço do novo presidente")).not.toBeInTheDocument();
+    });
+
+    it("should offer to accept only to the pending account, who becomes president with the withdraw form", async () => {
+      const mock = newParty({ owner: bob, pendingOwner: alice });
+      const { wallet, user } = await openAs(alice, mock);
+      expect(screen.queryByLabelText("Destino")).not.toBeInTheDocument();
+      vi.mocked(publicClient.waitForTransactionReceipt).mockImplementationOnce((async ({ hash }: { hash: string }) => {
+        mock.owner = alice;
+        mock.pendingOwner = undefined;
+
+        return { status: "success", transactionHash: hash, logs: [] };
+      }) as never);
+
+      await user.click(await screen.findByRole("button", { name: "Aceitar a presidência" }));
+
+      await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+      expect(sentCall(wallet)).toMatchObject({ to: party, functionName: "acceptOwnership" });
+      expect(await screen.findByLabelText("Destino")).toHaveValue(alice);
+      expect(within(stat("Presidente")).getByText(shortAddress(alice))).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Aceitar a presidência" })).not.toBeInTheDocument();
+    });
+
+    it("should not offer to accept to an account that is not the pending one", async () => {
+      await openAs(carol, newParty({ owner: bob, pendingOwner: alice }));
+      await screen.findByLabelText("Valor em ETH");
+
+      expect(screen.queryByRole("button", { name: "Aceitar a presidência" })).not.toBeInTheDocument();
+      expect(screen.getByText(/Presidente pendente:/)).toBeInTheDocument();
+    });
+
+    it("should not show the withdraw or handover forms to the former president", async () => {
+      // estado depois de a alice aceitar: o bob já não preside
+      await openAs(bob, newParty({ owner: alice }));
+      await screen.findByLabelText("Valor em ETH");
+
+      expect(screen.queryByLabelText("Destino")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Endereço do novo presidente")).not.toBeInTheDocument();
+    });
+  });
 });

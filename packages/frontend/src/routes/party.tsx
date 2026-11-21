@@ -1,13 +1,15 @@
 import { CoinsIcon, HandHeartIcon, Loader2Icon, SearchXIcon, TriangleAlertIcon, UserIcon } from "lucide-react";
 import { Link, useParams } from "react-router";
-import { getAddress, isAddress } from "viem";
+import { getAddress, isAddress, zeroAddress } from "viem";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { formatEth, shortAddress } from "@/lib/format";
 import {
+  AcceptCard,
   DonateCard,
+  HandoverCard,
   isSameAccount,
   PartyNotFoundError,
   useDonated,
@@ -60,13 +62,24 @@ export function Party() {
   }
 
   const data = party.data;
+  const isPresident = isSameAccount(account, data.owner);
+  const hasPending = data.pendingOwner !== zeroAddress;
 
   return (
     <div className="space-y-8">
       <PageHeader
         eyebrow="Partido"
         title={data.name}
-        description={<p className="font-mono text-xs break-all">{data.address}</p>}
+        description={
+          <div className="space-y-1">
+            <p className="font-mono text-xs break-all">{data.address}</p>
+            {hasPending && (
+              <p className="text-sm">
+                Presidente pendente: <span className="font-mono break-all">{data.pendingOwner}</span>
+              </p>
+            )}
+          </div>
+        }
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -89,14 +102,18 @@ export function Party() {
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <DonateCard party={data.address} />
-        {isSameAccount(account, data.owner) && (
-          <WithdrawCard
-            key={data.owner}
-            party={data.address}
-            president={data.owner}
-            balance={data.balance}
-          />
+        {isPresident && (
+          <>
+            <WithdrawCard
+              key={data.owner}
+              party={data.address}
+              president={data.owner}
+              balance={data.balance}
+            />
+            <HandoverCard party={data.address} />
+          </>
         )}
+        {hasPending && isSameAccount(account, data.pendingOwner) && <AcceptCard party={data.address} />}
       </div>
     </div>
   );
