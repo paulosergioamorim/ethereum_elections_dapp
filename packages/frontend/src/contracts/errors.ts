@@ -15,6 +15,7 @@ const messages: Record<string, string> = {
   EmptyPartyName: "Informe o nome do partido.",
   InvalidCandidate: "A carteira do candidato não pode ser o endereço zero.",
   EmptyCandidateName: "Informe o nome do candidato.",
+  InvalidParty: "O partido do candidato não pode ser o endereço zero.",
   ZeroDonation: "A doação precisa ser maior que zero.",
   InvalidRecipient: "O destino do saque não pode ser o endereço zero.",
   InsufficientBalance: "O saldo não é suficiente para este saque.",

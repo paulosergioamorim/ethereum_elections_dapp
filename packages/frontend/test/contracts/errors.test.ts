@@ -60,6 +60,7 @@ describe("contractErrorName", () => {
   it.each([
     ["InvalidCandidate", "A carteira do candidato não pode ser o endereço zero."],
     ["EmptyCandidateName", "Informe o nome do candidato."],
+    ["InvalidParty", "O partido do candidato não pode ser o endereço zero."],
   ] as const)("should decode %s from createCandidate, raised by the Candidate, as the Portuguese message", (errorName, message) => {
     // o erro nasce no Candidate e sobe pelo Party, cuja ABI não o lista
     const error = new ContractFunctionRevertedError({
