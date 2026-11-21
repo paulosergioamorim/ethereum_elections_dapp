@@ -48,6 +48,15 @@ describe("contractErrorName", () => {
     },
   );
 
+  it.each([
+    ["InvalidPresident", "O presidente não pode ser o endereço zero."],
+    ["EmptyPartyName", "Informe o nome do partido."],
+  ] as const)("should show %s as the Portuguese message", (errorName, message) => {
+    const error = factoryRevert(encodeErrorResult({ abi: electionFactoryAbi, errorName }), "createParty");
+
+    expect(errorMessage(error)).toBe(message);
+  });
+
   it.each(["ZeroDonation", "InvalidRecipient", "WithdrawFailed"] as const)(
     "should read the Party error %s",
     (errorName) => {
