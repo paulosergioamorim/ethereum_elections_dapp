@@ -17,6 +17,7 @@ import { phaseAt } from "./phase";
 import {
   candidateHoldQueryOptions,
   electionBallotsQueryOptions,
+  electionCandidaciesQueryOptions,
   electionGroupQueryOptions,
   electionQueryOptions,
   electionResultsQueryOptions,
@@ -360,6 +361,11 @@ export function useRevealBallots(election: ElectionDetails) {
   });
 
   return { ...mutation, progress };
+}
+
+/** Candidaturas que a eleição já teve, ativas ou não. */
+export function useElectionCandidacies(election: ElectionDetails | undefined) {
+  return useQuery(electionCandidaciesQueryOptions(election));
 }
 
 /** Onde o candidato está preso, se estiver; sem endereço, não consulta. */

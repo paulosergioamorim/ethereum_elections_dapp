@@ -21,4 +21,9 @@ export {
 } from "./hooks";
 export { partyKeys } from "./keys";
 export { isSameAccount } from "./president";
-export { CandidateNotFoundError, PartyNotFoundError, partyQueryOptions } from "./queries";
+export {
+  CandidateNotFoundError,
+  candidacyQueryOptions,
+  PartyNotFoundError,
+  partyQueryOptions,
+} from "./queries";

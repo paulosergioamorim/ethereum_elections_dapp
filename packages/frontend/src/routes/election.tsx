@@ -11,6 +11,7 @@ import {
   formatTimestamp,
   NominateCard,
   NomineesCard,
+  OwnCandidaciesCard,
   ResultsCard,
   useElection,
   useElectionEvents,
@@ -97,6 +98,8 @@ export function Election() {
       <NominateCard election={data} />
 
       <NomineesCard election={data} />
+
+      <OwnCandidaciesCard election={data} />
 
       <BallotsCard election={data} />
     </div>

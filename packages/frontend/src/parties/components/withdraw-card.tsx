@@ -24,6 +24,7 @@ export function WithdrawCard({
   owner,
   balance,
   holder = "partido",
+  idPrefix = "withdraw",
 }: {
   target: Address;
   /** Quem saca: o presidente do partido ou a carteira do candidato. */
@@ -31,6 +32,8 @@ export function WithdrawCard({
   /** Saldo em wei. */
   balance: bigint;
   holder?: "partido" | "candidato";
+  /** Prefixo dos ids dos campos: precisa ser único quando há mais de um formulário na página. */
+  idPrefix?: string;
 }) {
   const { isWrongChain } = useWallet();
   const withdraw = useWithdraw(target);
@@ -64,29 +67,29 @@ export function WithdrawCard({
     >
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="withdraw-to">Destino</Label>
+          <Label htmlFor={`${idPrefix}-to`}>Destino</Label>
           <Input
-            id="withdraw-to"
+            id={`${idPrefix}-to`}
             value={values.to}
             onChange={(event) => update("to", event.target.value)}
             className="font-mono"
             aria-invalid={!!errors.to}
-            aria-describedby={errors.to ? "withdraw-to-error" : undefined}
+            aria-describedby={errors.to ? `${idPrefix}-to-error` : undefined}
           />
-          <FieldError id="withdraw-to-error" message={errors.to} />
+          <FieldError id={`${idPrefix}-to-error`} message={errors.to} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="withdraw-amount">Valor em ETH</Label>
+          <Label htmlFor={`${idPrefix}-amount`}>Valor em ETH</Label>
           <div className="flex gap-2">
             <Input
-              id="withdraw-amount"
+              id={`${idPrefix}-amount`}
               inputMode="decimal"
               value={values.amount}
               onChange={(event) => update("amount", event.target.value)}
               placeholder="0,1"
               aria-invalid={!!errors.amount}
-              aria-describedby={errors.amount ? "withdraw-amount-error" : undefined}
+              aria-describedby={errors.amount ? `${idPrefix}-amount-error` : undefined}
             />
             <Button
               type="button"
@@ -96,7 +99,7 @@ export function WithdrawCard({
               Sacar tudo
             </Button>
           </div>
-          <FieldError id="withdraw-amount-error" message={errors.amount} />
+          <FieldError id={`${idPrefix}-amount-error`} message={errors.amount} />
         </div>
 
         <Button type="submit" className="h-10 w-full" disabled={!!reason || withdraw.isPending}>

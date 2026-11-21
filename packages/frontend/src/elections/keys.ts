@@ -9,6 +9,7 @@ export const electionKeys = {
   results: (address: string) => [...electionKeys.all, "results", address] as const,
   group: (address: string) => [...electionKeys.all, "group", address] as const,
   ballots: (address: string) => [...electionKeys.all, "ballots", address] as const,
+  candidacies: (address: string) => [...electionKeys.all, "candidacies", address] as const,
   hold: (candidate: string) => [...electionKeys.all, "hold", candidate] as const,
   opened: (address: string) => [...electionKeys.all, "opened", address] as const,
 };

@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { decodeFunctionData, getAddress, type Address } from "viem";
 import { describe, expect, it, vi } from "vitest";
-import { electionAbi, electionFactoryAbi, factoryAddress } from "@/contracts";
+import { electionAbi, electionFactoryAbi, factoryAddress, partyAbi } from "@/contracts";
 import { REVEAL_BATCH_SIZE, type OpenedBallot } from "@/elections";
 import { openBallots } from "@/elections/tally-crypto";
 import { prepareVote } from "@/elections/vote-crypto";
@@ -10,6 +10,7 @@ import { publicClient } from "@/lib/chain";
 import { shortAddress } from "@/lib/format";
 import { logRetry } from "@/lib/logs";
 import {
+  mockCandidacyAddress,
   mockChain,
   secondsFromNow,
   type MockBallot,
@@ -466,6 +467,179 @@ describe("Election (página da eleição)", () => {
           "href",
           `/parties/${partyAddress}`,
         );
+      });
+    });
+
+    describe("doações à candidatura", () => {
+      const ana = mockCandidacyAddress(electionAddress, 0);
+      const oneEth = 10n ** 18n;
+
+      function withDonations(overrides: Partial<MockElection> = {}) {
+        return nominationElection({
+          candidates: [
+            { name: "Ana", partyName: "Partido Alfa", owner: carol, balance: oneEth },
+            { name: "Bruno", partyName: "Partido Beta", owner: bob },
+          ],
+          ...overrides,
+        });
+      }
+
+      function donateForm() {
+        return screen.getByRole("heading", { name: "Doar" }).closest("section")!;
+      }
+
+      it("should send donate() with the amount to the chosen candidacy", async () => {
+        mockChain({ owner: bob, election: withDonations() });
+        const wallet = connectReturningUser({ accounts: [alice] });
+        const user = userEvent.setup();
+        renderRoute(`/elections/${electionAddress}`);
+
+        await screen.findByRole("list", { name: "Candidatos indicados" });
+        await user.type(within(donateForm()).getByLabelText("Valor em ETH"), "1,5");
+        await user.click(within(donateForm()).getByRole("button", { name: "Doar" }));
+
+        await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+        const [transaction] = wallet.transactions;
+        expect(getAddress(transaction.to)).toBe(ana);
+        expect(BigInt(transaction.value ?? 0)).toBe(1_500_000_000_000_000_000n);
+        expect(decodeFunctionData({ abi: partyAbi, data: transaction.data }).functionName).toBe("donate");
+      });
+
+      it("should donate to another nominee after choosing it", async () => {
+        mockChain({ owner: bob, election: withDonations() });
+        const wallet = connectReturningUser({ accounts: [alice] });
+        const user = userEvent.setup();
+        renderRoute(`/elections/${electionAddress}`);
+
+        await screen.findByRole("list", { name: "Candidatos indicados" });
+        await user.selectOptions(screen.getByLabelText("Doar para"), "Bruno (Partido Beta)");
+        await user.type(within(donateForm()).getByLabelText("Valor em ETH"), "0,1");
+        await user.click(within(donateForm()).getByRole("button", { name: "Doar" }));
+
+        await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+        expect(getAddress(wallet.transactions[0].to)).toBe(mockCandidacyAddress(electionAddress, 1));
+      });
+
+      it.each(["0", "abc", "0,0000000000000000001"])("should not open the wallet for the amount %s", async (amount) => {
+        mockChain({ owner: bob, election: withDonations() });
+        const wallet = connectReturningUser({ accounts: [alice] });
+        const user = userEvent.setup();
+        renderRoute(`/elections/${electionAddress}`);
+
+        await screen.findByRole("list", { name: "Candidatos indicados" });
+        await user.type(within(donateForm()).getByLabelText("Valor em ETH"), amount);
+        await user.click(within(donateForm()).getByRole("button", { name: "Doar" }));
+
+        expect(wallet.transactions).toHaveLength(0);
+      });
+
+      it("should disable donating without a wallet and still show the data", async () => {
+        mockChain({ owner: bob, election: withDonations() });
+        renderRoute(`/elections/${electionAddress}`);
+
+        await screen.findByRole("list", { name: "Candidatos indicados" });
+        expect(within(donateForm()).getByRole("button", { name: "Doar" })).toBeDisabled();
+        expect(within(donateForm()).getByText("Conecte a carteira para doar.")).toBeInTheDocument();
+        expect(await screen.findByLabelText("Saldo de Ana")).toHaveTextContent("1 ETH");
+      });
+
+      it("should show how much the active account already donated to each candidate", async () => {
+        mockChain({
+          owner: bob,
+          election: withDonations({
+            candidates: [
+              { name: "Ana", partyName: "Partido Alfa", donatedBy: { [alice]: 250_000_000_000_000_000n } },
+              { name: "Bruno", partyName: "Partido Beta" },
+            ],
+          }),
+        });
+        connectReturningUser({ accounts: [alice] });
+        renderRoute(`/elections/${electionAddress}`);
+
+        await waitFor(() =>
+          expect(screen.getByLabelText("Você já doou a Ana")).toHaveTextContent("0,25 ETH"),
+        );
+        await waitFor(() =>
+          expect(screen.getByLabelText("Você já doou a Bruno")).toHaveTextContent("0 ETH"),
+        );
+      });
+
+      it("should let the candidate wallet withdraw and nobody else", async () => {
+        mockChain({ owner: bob, election: withDonations() });
+        const wallet = connectReturningUser({ accounts: [carol] });
+        const user = userEvent.setup();
+        renderRoute(`/elections/${electionAddress}`);
+
+        const own = (await screen.findByRole("heading", { name: "Suas candidaturas com saldo" })).closest("section")!;
+        expect(within(own).getAllByRole("heading", { name: "Sacar" })).toHaveLength(1);
+        expect(within(own).getByLabelText("Destino")).toHaveValue(carol);
+
+        await user.click(within(own).getByRole("button", { name: "Sacar tudo" }));
+        await user.click(within(own).getByRole("button", { name: "Sacar" }));
+
+        await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+        const call = decodeFunctionData({ abi: partyAbi, data: wallet.transactions[0].data });
+        expect(getAddress(wallet.transactions[0].to)).toBe(ana);
+        expect(call).toMatchObject({ functionName: "withdraw", args: [carol, oneEth] });
+      });
+
+      it("should not show the withdraw form to other accounts", async () => {
+        mockChain({ owner: bob, election: withDonations() });
+        connectReturningUser({ accounts: [alice] });
+        renderRoute(`/elections/${electionAddress}`);
+
+        await screen.findByRole("list", { name: "Candidatos indicados" });
+        expect(screen.queryByRole("heading", { name: "Suas candidaturas com saldo" })).not.toBeInTheDocument();
+      });
+
+      it("should not open the wallet when the withdraw amount is above the balance", async () => {
+        mockChain({ owner: bob, election: withDonations() });
+        const wallet = connectReturningUser({ accounts: [carol] });
+        const user = userEvent.setup();
+        renderRoute(`/elections/${electionAddress}`);
+
+        const own = (await screen.findByRole("heading", { name: "Suas candidaturas com saldo" })).closest("section")!;
+        await user.type(within(own).getByLabelText("Valor em ETH"), "1,000000000000000001");
+        await user.click(within(own).getByRole("button", { name: "Sacar" }));
+
+        expect(wallet.transactions).toHaveLength(0);
+      });
+
+      it("should keep a withdrawn nomination with balance withdrawable by its candidate, without donating to it", async () => {
+        mockChain({
+          owner: bob,
+          election: withDonations({
+            candidates: [
+              { name: "Ana", partyName: "Partido Alfa", owner: carol, balance: oneEth, active: false },
+              { name: "Bruno", partyName: "Partido Beta", owner: bob },
+            ],
+          }),
+        });
+        connectReturningUser({ accounts: [carol] });
+        renderRoute(`/elections/${electionAddress}`);
+
+        const own = (await screen.findByRole("heading", { name: "Suas candidaturas com saldo" })).closest("section")!;
+        expect(within(own).getByText("Indicação retirada")).toBeInTheDocument();
+        // fora da lista e das doações
+        expect(screen.queryByLabelText("Saldo de Ana")).not.toBeInTheDocument();
+        expect(screen.queryByRole("option", { name: /Ana/ })).not.toBeInTheDocument();
+      });
+
+      it("should hide a withdrawn nomination without balance from its candidate", async () => {
+        mockChain({
+          owner: bob,
+          election: withDonations({
+            candidates: [
+              { name: "Ana", partyName: "Partido Alfa", owner: carol, active: false },
+              { name: "Bruno", partyName: "Partido Beta", owner: bob },
+            ],
+          }),
+        });
+        connectReturningUser({ accounts: [carol] });
+        renderRoute(`/elections/${electionAddress}`);
+
+        await screen.findByRole("list", { name: "Candidatos indicados" });
+        expect(screen.queryByRole("heading", { name: "Suas candidaturas com saldo" })).not.toBeInTheDocument();
       });
     });
 

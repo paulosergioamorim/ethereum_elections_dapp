@@ -96,6 +96,11 @@ function sameAddress(value: unknown, address: Address) {
   return typeof value === "string" && value.toLowerCase() === address.toLowerCase();
 }
 
+/** Endereço simulado da candidatura (`index`-ésimo indicado) de uma eleição. */
+export function mockCandidacyAddress(election: Address, index: number): Address {
+  return derived("candidacy", election, index);
+}
+
 function derived(kind: string, election: Address, index: number): Address {
   return getAddress(`0x${keccak256(toHex(`${kind}:${election}:${index}`)).slice(26)}`);
 }
@@ -310,6 +315,28 @@ export function mockChain({
       blockNumber: member.block,
       logIndex: Number(member.index),
     })),
+    // um `Nominated` por candidatura de cada eleição, ativa ou não (a retirada só some de `candidates()`)
+    ...[main, ...details].flatMap((election) =>
+      election
+        ? nomineesNow().flatMap((nominee, index) =>
+            nominee.election === election.address
+              ? [
+                  {
+                    eventName: "Nominated",
+                    args: {
+                      election: election.address,
+                      party: nominee.party,
+                      candidate: nominee.candidate,
+                      candidacy: nominee.candidacy,
+                    },
+                    blockNumber: (election.createdAtBlock ?? 10n) + 1n,
+                    logIndex: index,
+                  },
+                ]
+              : [],
+          )
+        : [],
+    ),
     ...(main?.ballots ?? []).flatMap((ballot, index) => [
       {
         eventName: "VoteCast",

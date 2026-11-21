@@ -14,9 +14,12 @@ import { useDonate } from "../hooks";
 export function DonateCard({
   target,
   description = "O valor vai para o saldo do partido; só o presidente saca.",
+  idPrefix = "donate",
 }: {
   target: Address;
   description?: string;
+  /** Prefixo dos ids dos campos: precisa ser único quando há mais de um formulário na página. */
+  idPrefix?: string;
 }) {
   const { status, isWrongChain } = useWallet();
   const donate = useDonate(target);
@@ -51,9 +54,9 @@ export function DonateCard({
     >
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="donate-amount">Valor em ETH</Label>
+          <Label htmlFor={`${idPrefix}-amount`}>Valor em ETH</Label>
           <Input
-            id="donate-amount"
+            id={`${idPrefix}-amount`}
             inputMode="decimal"
             value={amount}
             onChange={(event) => {
@@ -62,10 +65,10 @@ export function DonateCard({
             }}
             placeholder="0,1"
             aria-invalid={!!error}
-            aria-describedby={error ? "donate-amount-error" : undefined}
+            aria-describedby={error ? `${idPrefix}-amount-error` : undefined}
           />
           {error && (
-            <p id="donate-amount-error" className="text-xs text-destructive">
+            <p id={`${idPrefix}-amount-error`} className="text-xs text-destructive">
               {error}
             </p>
           )}

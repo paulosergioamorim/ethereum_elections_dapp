@@ -305,3 +305,29 @@ export function candidateHoldQueryOptions(candidate: Address | undefined) {
     queryFn: candidate ? () => fetchCandidateHold(candidate) : skipToken,
   });
 }
+
+/**
+ * Candidaturas que a eleição já teve, ativas ou não (eventos `Nominated` da factory). Uma indicação
+ * retirada some de `candidates()`, mas a candidatura guarda o saldo para o candidato sacar.
+ */
+async function fetchCandidacies(election: ElectionDetails): Promise<Address[]> {
+  const blocks = { fromBlock: election.createdAtBlock, toBlock: await freshBlockNumber() };
+  const logs = await fetchLogsInRanges(blocks, (range) =>
+    publicClient.getContractEvents({
+      address: factoryAddress,
+      abi: electionFactoryAbi,
+      eventName: "Nominated",
+      args: { election: election.address },
+      ...range,
+    }),
+  );
+
+  return [...new Set(logs.sort(byChainOrder).map((log) => log.args.candidacy!))];
+}
+
+export function electionCandidaciesQueryOptions(election: ElectionDetails | undefined) {
+  return queryOptions({
+    queryKey: electionKeys.candidacies(election?.address ?? "none"),
+    queryFn: election ? () => fetchCandidacies(election) : skipToken,
+  });
+}
