@@ -1,4 +1,5 @@
 import {
+  ContractsList,
   DeploymentCard,
   LimitationsCard,
   SupportingTools,
@@ -22,6 +23,8 @@ export function About() {
           <TechnologyCard key={technology.id} technology={technology} />
         ))}
       </div>
+
+      <ContractsList />
 
       <VoteJourney />
 

@@ -1,4 +1,5 @@
 // Página "Sobre": as tecnologias de blockchain e criptografia do projeto, com a documentação.
+export { ContractsList } from "./components/contracts-list";
 export { DeploymentCard } from "./components/deployment-card";
 export { LimitationsCard } from "./components/limitations-card";
 export { SupportingTools } from "./components/supporting-tools";

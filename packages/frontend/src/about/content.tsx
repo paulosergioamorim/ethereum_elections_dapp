@@ -22,6 +22,69 @@ export type Technology = {
   docs: DocLink[];
 };
 
+/** Um contrato do projeto: o que ele é, quem o cria e o que ele guarda. */
+export type ContractInfo = {
+  name: string;
+  /** Como ele nasce: implantado uma vez ou clonado por outro contrato. */
+  origin: string;
+  description: ReactNode;
+};
+
+export const contracts: ContractInfo[] = [
+  {
+    name: "ElectionFactory",
+    origin: "Implantado uma vez",
+    description: (
+      <>
+        O ponto de entrada. Guarda a lista de eleitores e o grupo do Semaphore, cria eleições e
+        partidos, e registra as indicações de candidatos. Só a autoridade, dona da factory, cria
+        eleições e partidos.
+      </>
+    ),
+  },
+  {
+    name: "Election",
+    origin: "Clone criado pela factory",
+    description: (
+      <>
+        Uma eleição: as fases, as cédulas cifradas e a apuração. Recebe da factory a lista de
+        eleitores daquele instante e confere cada cédula aberta com o hash enviado na votação.
+      </>
+    ),
+  },
+  {
+    name: "Party",
+    origin: "Clone criado pela factory",
+    description: (
+      <>
+        Um partido. O presidente é o dono do contrato, cria os candidatos do partido com{" "}
+        <Code>createCandidate</Code> e saca as doações recebidas.
+      </>
+    ),
+  },
+  {
+    name: "Candidate",
+    origin: "Clone criado pelo partido",
+    description: (
+      <>
+        Um candidato, ligado ao partido que o criou. A carteira do candidato é a dona do contrato e
+        saca as doações enviadas a ele.
+      </>
+    ),
+  },
+  {
+    name: "Candidacy",
+    origin: "Clone criado pela factory",
+    description: (
+      <>
+        A candidatura de um candidato a uma eleição, a associação entre os dois. A factory diz se a
+        indicação segue ativa: indicação retirada ou substituída deixa de aceitar doações, mas o
+        saldo continua sacável pelo candidato.
+      </>
+    ),
+  },
+];
+
 export type JourneyStep = { title: string; description: string };
 
 export const journey: JourneyStep[] = [
