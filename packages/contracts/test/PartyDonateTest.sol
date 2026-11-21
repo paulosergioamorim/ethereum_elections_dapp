@@ -60,8 +60,10 @@ contract PartyDonateTest is Test {
     }
 
     function test_shouldImplementIDonatable() public {
+        // a conversão implícita só compila se `Party` herdar de `IDonatable`
+        IDonatable donatable = party;
         vm.prank(donor);
-        IDonatable(address(party)).donate{value: 1}();
+        donatable.donate{value: 1}();
         assertEq(party.donatedBy(donor), 1);
     }
 }
