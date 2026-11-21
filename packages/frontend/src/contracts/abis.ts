@@ -1317,6 +1317,11 @@ export const candidateAbi = [
   },
   {
     "inputs": [],
+    "name": "InvalidParty",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidRecipient",
     "type": "error"
   },

@@ -90,6 +90,7 @@ Contract calls (200 success, 403 revert for a caller who may not call, 400 other
 2. IF a non-president calls `createCandidate` THEN the party SHALL revert with `OwnableUnauthorizedAccount`
 3. IF `candidate` is `address(0)` THEN `Candidate.initialize` SHALL revert (bubbling up through `createCandidate`) with `InvalidCandidate`
 4. IF `name` is empty THEN `Candidate.initialize` SHALL revert (bubbling up through `createCandidate`) with `EmptyCandidateName`
+4a. IF `Candidate.initialize` is called with `party` equal to `address(0)` THEN it SHALL revert with `InvalidParty` (checked after wallet and name; `Party` never passes zero, so the UI cannot reach it)
 5. IF `initialize` is called again on a candidate that was already initialized THEN it SHALL revert with `InvalidInitialization`, and `owner()`, `name()` and `party()` SHALL stay unchanged; the same holds for the `Candidate` implementation itself (`_candidateBase`), so nobody can own or name it
 6. WHEN the president creates two candidates THEN the party SHALL deploy two clones at distinct addresses, neither the implementation's, each with its own `owner()`, `name()`, `donatedBy` and balance
 7. WHEN the same wallet or the same name is used for a second candidate THEN the party SHALL create it too (no uniqueness)

@@ -65,6 +65,12 @@ contract PartyCreateCandidateTest is Test {
         party.createCandidate(wallet, "");
     }
 
+    function test_shouldRevertWithInvalidPartyOnInitialize() public {
+        Candidate c = Candidate(Clones.clone(address(new Candidate())));
+        vm.expectRevert(Candidate.InvalidParty.selector);
+        c.initialize(wallet, "Candidato Um", address(0));
+    }
+
     function test_shouldAllowDuplicateWalletAndName() public {
         vm.startPrank(president);
         Candidate a = party.createCandidate(wallet, "Candidato Um");

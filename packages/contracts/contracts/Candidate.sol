@@ -9,6 +9,7 @@ contract Candidate is DonationHolder {
     address public party;
 
     error InvalidCandidate();
+    error InvalidParty();
     error EmptyCandidateName();
 
     function initialize(
@@ -22,6 +23,10 @@ contract Candidate is DonationHolder {
 
         if (bytes(_name).length == 0) {
             revert EmptyCandidateName();
+        }
+
+        if (_party == address(0)) {
+            revert InvalidParty();
         }
 
         name = _name;
