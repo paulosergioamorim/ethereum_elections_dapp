@@ -11,7 +11,7 @@ contract PartyOwnershipTest is Test {
     address newPresident = address(0xB0B);
 
     function setUp() public {
-        party = new Party(president, "PT");
+        party = new Party(president, "Test Party");
         vm.deal(address(this), 1 ether);
         party.donate{value: 1 ether}();
     }

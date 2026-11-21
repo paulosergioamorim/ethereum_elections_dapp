@@ -14,7 +14,7 @@ contract PartyWithdrawTest is Test {
     address payable recipient = payable(address(0xBEEF));
 
     function setUp() public {
-        party = new Party(president, "PT");
+        party = new Party(president, "Test Party");
         vm.deal(donor, 100 ether);
         vm.prank(donor);
         party.donate{value: 10 ether}();

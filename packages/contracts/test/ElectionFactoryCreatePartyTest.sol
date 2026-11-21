@@ -19,12 +19,12 @@ contract ElectionFactoryCreatePartyTest is ElectionFactoryTestBase {
             )
         );
         vm.prank(sender);
-        factory.createParty(address(1), "PT");
+        factory.createParty(address(1), "Test Party");
     }
 
     function test_shouldRevertWithInvalidPresident() public {
         vm.expectRevert(ElectionFactory.InvalidPresident.selector);
-        factory.createParty(address(0), "PT");
+        factory.createParty(address(0), "Test Party");
     }
 
     function test_shouldRevertWithEmptyPartyName() public {
@@ -43,7 +43,7 @@ contract ElectionFactoryCreatePartyTest is ElectionFactoryTestBase {
     }
 
     function test_shouldRegisterParty() public {
-        Party party = factory.createParty(address(1), "PT");
+        Party party = factory.createParty(address(1), "Test Party");
         Party[] memory list = factory.parties();
         assertEq(list.length, 1);
         assertEq(address(list[0]), address(party));
@@ -59,12 +59,12 @@ contract ElectionFactoryCreatePartyTest is ElectionFactoryTestBase {
         );
         vm.expectEmit(true, false, false, false, address(factory));
         emit PartyCreated(expected);
-        factory.createParty(address(1), "PT");
+        factory.createParty(address(1), "Test Party");
     }
 
     function test_shouldCreateDistinctParties() public {
-        Party a = factory.createParty(address(1), "PT");
-        Party b = factory.createParty(address(1), "PT");
+        Party a = factory.createParty(address(1), "Test Party");
+        Party b = factory.createParty(address(1), "Test Party");
         assertNotEq(address(a), address(b));
         assertEq(factory.parties().length, 2);
     }
