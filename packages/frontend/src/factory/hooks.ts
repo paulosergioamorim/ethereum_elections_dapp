@@ -146,8 +146,8 @@ export function useRemoveVoter() {
 
 export type CreateElectionInput = {
   title: string;
-  candidates: string[];
   /** Timestamps Unix em segundos. */
+  nominationEnd: bigint;
   votingStart: bigint;
   votingEnd: bigint;
 };

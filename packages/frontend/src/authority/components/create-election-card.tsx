@@ -1,4 +1,4 @@
-import { ArrowRightIcon, CalendarPlusIcon, Loader2Icon, PlusIcon, XIcon } from "lucide-react";
+import { ArrowRightIcon, CalendarPlusIcon, Loader2Icon } from "lucide-react";
 import { useState, type SubmitEvent } from "react";
 import { Link } from "react-router";
 import type { Address } from "viem";
@@ -46,17 +46,11 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
     setErrors((current) => ({ ...current, [field]: undefined }));
   }
 
-  function updateCandidate(index: number, name: string) {
-    update(
-      "candidates",
-      values.candidates.map((candidate, position) => (position === index ? name : candidate)),
-    );
-  }
-
   function onSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     // validado no envio, com o horário de agora: a margem do início depende dele
-    const { errors: found, input } = validateElectionForm(values, Math.floor(Date.now() / 1000));
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const { errors: found, input } = validateElectionForm(values, nowSeconds);
     setErrors(found);
 
     if (!input || blockedReason) {
@@ -76,7 +70,7 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
       layout="stacked"
       icon={CalendarPlusIcon}
       title="Nova eleição"
-      description="Título, candidatos e período de votação."
+      description="Título, prazo das indicações e período de votação."
     >
       {created && (
         <div className="mb-5">
@@ -109,52 +103,21 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
           <FieldError id="election-title-error" message={errors.title} />
         </div>
 
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">Candidatos</legend>
-
-          {values.candidates.map((candidate, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <span className="w-5 shrink-0 text-right text-xs text-muted-foreground">
-                {index + 1}
-              </span>
-              <Input
-                value={candidate}
-                onChange={(event) => updateCandidate(index, event.target.value)}
-                placeholder={`Candidato ${index + 1}`}
-                aria-label={`Candidato ${index + 1}`}
-                aria-invalid={!!errors.candidates}
-              />
-              {values.candidates.length > 2 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Remover candidato ${index + 1}`}
-                  onClick={() =>
-                    update(
-                      "candidates",
-                      values.candidates.filter((_, position) => position !== index),
-                    )
-                  }
-                >
-                  <XIcon />
-                </Button>
-              )}
-            </div>
-          ))}
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => update("candidates", [...values.candidates, ""])}
-          >
-            <PlusIcon />
-            Adicionar candidato
-          </Button>
-
-          <FieldError id="election-candidates-error" message={errors.candidates} />
-        </fieldset>
+        <div className="space-y-2">
+          <Label htmlFor="election-nomination-end">Fim das indicações</Label>
+          <Input
+            id="election-nomination-end"
+            type="datetime-local"
+            value={values.nominationEnd}
+            onChange={(event) => update("nominationEnd", event.target.value)}
+            aria-invalid={!!errors.nominationEnd}
+            aria-describedby={errors.nominationEnd ? "election-nomination-end-error" : undefined}
+          />
+          <FieldError id="election-nomination-end-error" message={errors.nominationEnd} />
+          <p className="text-xs text-muted-foreground">
+            Até lá, o presidente de cada partido indica um candidato.
+          </p>
+        </div>
 
         <div className="space-y-2">
           <Label htmlFor="election-start">Início da votação</Label>

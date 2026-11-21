@@ -78,7 +78,7 @@ export function RevealPanel({ election }: { election: ElectionDetails }) {
           {election.candidates.map((candidate, index) => (
             <ResultRow
               key={index}
-              label={candidate}
+              label={candidate.name}
               votes={preview.tally[index] ?? 0n}
               base={preview.counted}
             />

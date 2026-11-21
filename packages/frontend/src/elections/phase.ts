@@ -1,18 +1,30 @@
 /** Fase da eleição, pela mesma regra de `Election.phase()`. */
-export type ElectionPhase = "scheduled" | "voting" | "tally";
+export type ElectionPhase = "nomination" | "scheduled" | "voting" | "tally";
 
 export const phaseLabels: Record<ElectionPhase, string> = {
+  nomination: "Indicação de candidatos",
   scheduled: "Agendada",
   voting: "Em votação",
   tally: "Em apuração",
 };
 
-/** Antes do início: agendada. Do início até antes do fim: votação. A partir do fim: apuração. */
+/**
+ * Antes do fim das indicações: indicação. Depois, até o início: agendada. Do início até antes do
+ * fim: votação. A partir do fim: apuração.
+ */
 export function phaseAt(
   nowSeconds: number,
-  { votingStart, votingEnd }: { votingStart: bigint; votingEnd: bigint },
+  {
+    nominationEnd,
+    votingStart,
+    votingEnd,
+  }: { nominationEnd: bigint; votingStart: bigint; votingEnd: bigint },
 ): ElectionPhase {
   const now = BigInt(Math.floor(nowSeconds));
+
+  if (now < nominationEnd) {
+    return "nomination";
+  }
 
   if (now < votingStart) {
     return "scheduled";

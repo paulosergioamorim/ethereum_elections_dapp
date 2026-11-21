@@ -1,12 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { formatCountdown, phaseAt } from "@/elections/phase";
 
-const election = { votingStart: 1_000n, votingEnd: 2_000n };
+const election = { nominationEnd: 500n, votingStart: 1_000n, votingEnd: 2_000n };
 
 describe("phaseAt", () => {
   // mesma regra de Election.phase(): o início é inclusivo e o fim já é apuração
-  it("should be scheduled before the start", () => {
+  it("should be nomination before the end of the nominations", () => {
+    expect(phaseAt(0, election)).toBe("nomination");
+    expect(phaseAt(499.9, election)).toBe("nomination");
+  });
+
+  it("should be scheduled from the end of the nominations, inclusive, until the start", () => {
+    expect(phaseAt(500, election)).toBe("scheduled");
     expect(phaseAt(999, election)).toBe("scheduled");
+  });
+
+  it("should skip scheduled when the nominations end at the start", () => {
+    const sameInstant = { nominationEnd: 1_000n, votingStart: 1_000n, votingEnd: 2_000n };
+
+    expect(phaseAt(999, sameInstant)).toBe("nomination");
+    expect(phaseAt(1_000, sameInstant)).toBe("voting");
   });
 
   it("should be voting from the start, inclusive", () => {

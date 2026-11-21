@@ -9,7 +9,7 @@ import type { ElectionDetails } from "../queries";
 
 function optionLabel(election: ElectionDetails, option: bigint): string {
   return option < BigInt(election.candidates.length)
-    ? election.candidates[Number(option)]
+    ? election.candidates[Number(option)].name
     : "Nulo";
 }
 

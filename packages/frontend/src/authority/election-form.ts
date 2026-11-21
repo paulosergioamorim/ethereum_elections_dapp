@@ -3,7 +3,7 @@ import type { CreateElectionInput } from "@/factory";
 /** Valores do formulário; as datas no formato do `<input type="datetime-local">` (horário local). */
 export type ElectionFormValues = {
   title: string;
-  candidates: string[];
+  nominationEnd: string;
   votingStart: string;
   votingEnd: string;
 };
@@ -36,24 +36,25 @@ export function fromDateTimeLocal(value: string): number | undefined {
   return Number.isNaN(milliseconds) ? undefined : Math.floor(milliseconds / 1000);
 }
 
-/** Formulário em branco: início daqui a ~10 min (múltiplo de 5) e 1 hora de votação. */
+/** Formulário em branco: indicações até daqui a ~10 min (múltiplo de 5), votação 5 min depois e 1 hora de votação. */
 export function defaultElectionForm(now = new Date()): ElectionFormValues {
-  const start = new Date(now.getTime() + 10 * 60_000);
-  start.setSeconds(0, 0);
-  start.setMinutes(Math.ceil(start.getMinutes() / 5) * 5);
+  const nominationEnd = new Date(now.getTime() + 10 * 60_000);
+  nominationEnd.setSeconds(0, 0);
+  nominationEnd.setMinutes(Math.ceil(nominationEnd.getMinutes() / 5) * 5);
+  const start = new Date(nominationEnd.getTime() + 5 * 60_000);
   const end = new Date(start.getTime() + 60 * 60_000);
 
   return {
     title: "",
-    candidates: ["", ""],
+    nominationEnd: toDateTimeLocal(nominationEnd),
     votingStart: toDateTimeLocal(start),
     votingEnd: toDateTimeLocal(end),
   };
 }
 
 /**
- * As mesmas regras do `initialize` do Election, mais o título obrigatório, candidatos sem repetição
- * e a margem no início. A ordem dos candidatos é mantida: o índice de cada um é a opção de voto.
+ * As mesmas regras do `initialize` do Election, mais o título obrigatório e a margem no fim das
+ * indicações e no início da votação. Os candidatos não entram aqui: os partidos os indicam depois.
  */
 export function validateElectionForm(
   values: ElectionFormValues,
@@ -61,7 +62,7 @@ export function validateElectionForm(
 ): { errors: ElectionFormErrors; input?: CreateElectionInput } {
   const errors: ElectionFormErrors = {};
   const title = values.title.trim();
-  const candidates = values.candidates.map((candidate) => candidate.trim()).filter(Boolean);
+  const nominationEnd = fromDateTimeLocal(values.nominationEnd);
   const start = fromDateTimeLocal(values.votingStart);
   const end = fromDateTimeLocal(values.votingEnd);
 
@@ -69,13 +70,13 @@ export function validateElectionForm(
     errors.title = "Dê um título à eleição.";
   }
 
-  if (candidates.length < 2) {
-    errors.candidates = "Informe pelo menos 2 candidatos.";
-  } else if (
-    new Set(candidates.map((candidate) => candidate.toLocaleLowerCase("pt-BR"))).size !==
-    candidates.length
-  ) {
-    errors.candidates = "Há candidatos repetidos.";
+  if (nominationEnd === undefined) {
+    errors.nominationEnd = "Informe quando as indicações terminam.";
+  } else if (nominationEnd < nowSeconds + MIN_START_DELAY_SECONDS) {
+    errors.nominationEnd =
+      "O fim das indicações precisa estar pelo menos 2 minutos no futuro, para dar tempo de a transação ser confirmada.";
+  } else if (start !== undefined && nominationEnd > start) {
+    errors.nominationEnd = "O fim das indicações não pode ser depois do início da votação.";
   }
 
   if (start === undefined) {
@@ -91,12 +92,22 @@ export function validateElectionForm(
     errors.votingEnd = "O fim precisa ser depois do início.";
   }
 
-  if (Object.keys(errors).length > 0 || start === undefined || end === undefined) {
+  if (
+    Object.keys(errors).length > 0 ||
+    nominationEnd === undefined ||
+    start === undefined ||
+    end === undefined
+  ) {
     return { errors };
   }
 
   return {
     errors,
-    input: { title, candidates, votingStart: BigInt(start), votingEnd: BigInt(end) },
+    input: {
+      title,
+      nominationEnd: BigInt(nominationEnd),
+      votingStart: BigInt(start),
+      votingEnd: BigInt(end),
+    },
   };
 }

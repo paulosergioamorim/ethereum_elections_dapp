@@ -1,6 +1,13 @@
 import { queryOptions, skipToken } from "@tanstack/react-query";
 import type { Address } from "viem";
-import { electionAbi, electionFactoryAbi, factoryAddress } from "@/contracts";
+import {
+  candidacyAbi,
+  candidateAbi,
+  electionAbi,
+  electionFactoryAbi,
+  factoryAddress,
+  partyAbi,
+} from "@/contracts";
 import { factoryInfoQueryOptions, fetchVoterGroup } from "@/factory";
 import { freshBlockNumber } from "@/lib/block-floor";
 import { publicClient } from "@/lib/chain";
@@ -21,13 +28,30 @@ export const electionsQueryOptions = queryOptions({
     }),
 });
 
-/** Dados fixos de uma eleição: não mudam depois da criação. */
+/** Um candidato indicado: a candidatura (eleição + candidato) e quem a indicou. */
+export type Nominee = {
+  /** O contrato `Candidacy`: recebe as doações da campanha nesta eleição. */
+  candidacy: Address;
+  /** O contrato `Candidate`. */
+  candidate: Address;
+  name: string;
+  party: Address;
+  partyName: string;
+  /** A carteira do candidato: quem saca o que foi doado à candidatura. */
+  owner: Address;
+};
+
+/**
+ * Dados de uma eleição. Só `candidates` muda, e só enquanto dura a indicação; as ações do app a
+ * relêem (`electionKeys.detail`).
+ */
 export type ElectionDetails = {
   address: Address;
   title: string;
-  /** O índice de cada candidato é a opção de voto; um índice fora da lista é voto nulo. */
-  candidates: readonly string[];
+  /** Os indicados, na ordem do voto: o índice é a opção; um índice fora da lista é voto nulo. */
+  candidates: readonly Nominee[];
   /** Timestamps Unix em segundos. */
+  nominationEnd: bigint;
   votingStart: bigint;
   votingEnd: bigint;
   groupId: bigint;
@@ -42,6 +66,33 @@ export class ElectionNotFoundError extends Error {
     super(`O endereço ${address} não é uma eleição desta factory.`);
     this.name = "ElectionNotFoundError";
   }
+}
+
+async function fetchNominees(
+  candidacies: readonly Address[],
+  blockNumber: bigint,
+): Promise<Nominee[]> {
+  return Promise.all(
+    candidacies.map(async (candidacy) => {
+      const read = { address: candidacy, abi: candidacyAbi, blockNumber } as const;
+      const [candidate, party, owner] = await Promise.all([
+        publicClient.readContract({ ...read, functionName: "candidate" }),
+        publicClient.readContract({ ...read, functionName: "party" }),
+        publicClient.readContract({ ...read, functionName: "owner" }),
+      ]);
+      const [name, partyName] = await Promise.all([
+        publicClient.readContract({
+          address: candidate,
+          abi: candidateAbi,
+          functionName: "name",
+          blockNumber,
+        }),
+        publicClient.readContract({ address: party, abi: partyAbi, functionName: "name", blockNumber }),
+      ]);
+
+      return { candidacy, candidate, name, party, partyName, owner };
+    }),
+  );
 }
 
 async function fetchElection(address: Address): Promise<ElectionDetails> {
@@ -60,10 +111,19 @@ async function fetchElection(address: Address): Promise<ElectionDetails> {
   }
 
   const read = { address, abi: electionAbi, blockNumber } as const;
-  const [title, candidates, votingStart, votingEnd, groupId, merkleTreeRoot, createdAtBlock] =
-    await Promise.all([
+  const [
+    title,
+    candidacies,
+    nominationEnd,
+    votingStart,
+    votingEnd,
+    groupId,
+    merkleTreeRoot,
+    createdAtBlock,
+  ] = await Promise.all([
       publicClient.readContract({ ...read, functionName: "title" }),
       publicClient.readContract({ ...read, functionName: "candidates" }),
+      publicClient.readContract({ ...read, functionName: "nominationEnd" }),
       publicClient.readContract({ ...read, functionName: "votingStart" }),
       publicClient.readContract({ ...read, functionName: "votingEnd" }),
       publicClient.readContract({ ...read, functionName: "groupId" }),
@@ -74,7 +134,8 @@ async function fetchElection(address: Address): Promise<ElectionDetails> {
   return {
     address,
     title,
-    candidates,
+    candidates: await fetchNominees(candidacies, blockNumber),
+    nominationEnd,
     votingStart,
     votingEnd,
     groupId,
@@ -87,7 +148,7 @@ export function electionQueryOptions(address: Address | undefined) {
   return queryOptions({
     queryKey: electionKeys.detail(address ?? "none"),
     queryFn: address ? () => fetchElection(address) : skipToken,
-    // dados fixos depois da criação
+    // só os indicados mudam, e as ações do app invalidam esta chave
     staleTime: Infinity,
     retry: (failures, error) => !(error instanceof ElectionNotFoundError) && failures < 3,
   });

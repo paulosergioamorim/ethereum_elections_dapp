@@ -1,6 +1,6 @@
 import { queryOptions, skipToken } from "@tanstack/react-query";
 import type { Address } from "viem";
-import { candidateAbi, electionFactoryAbi, factoryAddress, partyAbi } from "@/contracts";
+import { candidacyAbi, candidateAbi, electionFactoryAbi, factoryAddress, partyAbi } from "@/contracts";
 import { freshBlockNumber } from "@/lib/block-floor";
 import { publicClient } from "@/lib/chain";
 import { partyKeys } from "./keys";
@@ -166,5 +166,43 @@ export function candidateQueryOptions(address: Address | undefined) {
     queryKey: partyKeys.candidate(address ?? ""),
     queryFn: address ? () => fetchCandidate(address) : skipToken,
     retry: (failures: number, error: Error) => !(error instanceof CandidateNotFoundError) && failures < 3,
+  });
+}
+
+type CandidacyDetails = {
+  address: Address;
+  /** A carteira do candidato: quem saca. */
+  owner: Address;
+  /** Saldo em wei. */
+  balance: bigint;
+  /** `false` depois de a indicação ser retirada ou substituída: o saldo fica sacável, sem novas doações. */
+  active: boolean;
+};
+
+async function fetchCandidacy(address: Address): Promise<CandidacyDetails> {
+  const blockNumber = await freshBlockNumber();
+  const [owner, balance, active] = await Promise.all([
+    publicClient.readContract({ address, abi: candidacyAbi, functionName: "owner", blockNumber }),
+    publicClient.getBalance({ address, blockNumber }),
+    publicClient.readContract({
+      address: factoryAddress,
+      abi: electionFactoryAbi,
+      functionName: "isActive",
+      args: [address],
+      blockNumber,
+    }),
+  ]);
+
+  return { address, owner, balance, active };
+}
+
+/**
+ * Saldo, dono e situação de uma candidatura. O endereço vem de um `Election` da factory, então não
+ * há checagem extra de confiança aqui.
+ */
+export function candidacyQueryOptions(address: Address | undefined) {
+  return queryOptions({
+    queryKey: partyKeys.candidacy(address ?? ""),
+    queryFn: address ? () => fetchCandidacy(address) : skipToken,
   });
 }

@@ -32,7 +32,17 @@ const eligibilityMessages: Partial<Record<VoteEligibility, string>> = {
     "Esta conta se registrou depois da criação desta eleição, então não está na lista de eleitores dela.",
 };
 
-function Option({ value, number, label }: { value: string; number?: number; label: string }) {
+function Option({
+  value,
+  number,
+  label,
+  hint,
+}: {
+  value: string;
+  number?: number;
+  label: string;
+  hint?: string;
+}) {
   const id = `vote-option-${value}`;
 
   return (
@@ -48,6 +58,7 @@ function Option({ value, number, label }: { value: string; number?: number; labe
       )}
       <span className={cn("text-sm font-medium", number === undefined && "text-muted-foreground")}>
         {label}
+        {hint && <span className="block text-xs font-normal text-muted-foreground">{hint}</span>}
       </span>
     </label>
   );
@@ -76,7 +87,9 @@ export function VoteCard({ election }: { election: ElectionDetails }) {
 
   let blockedReason: string | undefined;
 
-  if (phase === "scheduled") {
+  if (phase === "nomination") {
+    blockedReason = "A votação começa depois da fase de indicação.";
+  } else if (phase === "scheduled") {
     blockedReason = `A votação começa em ${formatCountdown(Number(election.votingStart) - now)}.`;
   } else if (phase === "tally") {
     blockedReason = "A votação terminou.";
@@ -121,7 +134,13 @@ export function VoteCard({ election }: { election: ElectionDetails }) {
           className="gap-2"
         >
           {election.candidates.map((candidate, index) => (
-            <Option key={index} value={String(index)} number={index + 1} label={candidate} />
+            <Option
+              key={candidate.candidacy}
+              value={String(index)}
+              number={index + 1}
+              label={candidate.name}
+              hint={candidate.partyName}
+            />
           ))}
           <Option value={NULL_VOTE} label="Votar nulo" />
         </RadioGroup>

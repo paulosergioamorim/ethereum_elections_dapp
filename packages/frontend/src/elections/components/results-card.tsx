@@ -50,7 +50,7 @@ export function ResultsCard({ election }: { election: ElectionDetails }) {
           {election.candidates.map((candidate, index) => (
             <ResultRow
               key={index}
-              label={candidate}
+              label={candidate.name}
               votes={tally[index] ?? 0n}
               base={revealed}
               elected={index === elected}

@@ -1,5 +1,5 @@
 import { buildGroup } from "@elections/shared/group";
-import { encodeEventTopics, zeroAddress, type Address, type Hex } from "viem";
+import { encodeEventTopics, getAddress, keccak256, toHex, zeroAddress, type Address, type Hex } from "viem";
 import { vi } from "vitest";
 import { electionFactoryAbi, factoryAddress } from "@/contracts";
 import { publicClient } from "@/lib/chain";
@@ -50,11 +50,28 @@ export type MockParty = {
   candidates?: MockCandidate[];
 };
 
+/** Um indicado da eleição; uma string é só o nome do candidato. */
+export type MockNominee = {
+  name: string;
+  /** Padrão: "Partido <nome>". */
+  partyName?: string;
+  /** A carteira do candidato. Padrão: um endereço derivado. */
+  owner?: Address;
+  /** Saldo em wei da candidatura. Padrão: 0. */
+  balance?: bigint;
+  /** Quanto cada conta já doou à candidatura. */
+  donatedBy?: Record<string, bigint>;
+  /** `false` simula uma indicação retirada: fora de `candidates()`, sem aceitar doações. */
+  active?: boolean;
+};
+
 export type MockElection = {
   address: Address;
   title?: string;
-  candidates?: string[];
-  /** Timestamps Unix em segundos. */
+  /** Os indicados, na ordem do voto. Padrão: Ana e Bruno. */
+  candidates?: (string | MockNominee)[];
+  /** Timestamps Unix em segundos. Padrão: já passou, então a eleição não está em indicação. */
+  nominationEnd?: bigint;
   votingStart: bigint;
   votingEnd: bigint;
   /** Bloco da criação: a árvore da eleição tem só quem se registrou até ele. Padrão: 10. */
@@ -72,6 +89,28 @@ const semaphore: Address = "0x0000000000000000000000000000000000005e3a";
 
 function sameAddress(value: unknown, address: Address) {
   return typeof value === "string" && value.toLowerCase() === address.toLowerCase();
+}
+
+function derived(kind: string, election: Address, index: number): Address {
+  return getAddress(`0x${keccak256(toHex(`${kind}:${election}:${index}`)).slice(26)}`);
+}
+
+/** Todas as candidaturas simuladas de uma eleição (ativas ou não), com os endereços derivados. */
+function nomineesOf(election: MockElection) {
+  return (election.candidates ?? ["Ana", "Bruno"]).map((entry, index) => {
+    const nominee = typeof entry === "string" ? { name: entry } : entry;
+
+    return {
+      ...nominee,
+      election: election.address,
+      candidacy: derived("candidacy", election.address, index),
+      candidate: derived("candidate", election.address, index),
+      party: derived("party", election.address, index),
+      partyName: nominee.partyName ?? `Partido ${nominee.name}`,
+      owner: nominee.owner ?? derived("owner", election.address, index),
+      active: nominee.active ?? true,
+    };
+  });
 }
 
 /** Segundos Unix de agora, deslocados em `seconds`. */
@@ -121,6 +160,7 @@ export function mockChain({
     );
   }
 
+  const allNominees = [main, ...details].flatMap((election) => (election ? nomineesOf(election) : []));
   const group = groupUntil(2n ** 64n);
   const createdAtBlock = main?.createdAtBlock ?? 10n;
   const electionRoot = main ? (groupUntil(createdAtBlock).root ?? 0n) : 0n;
@@ -141,10 +181,14 @@ export function mockChain({
     // leituras de uma eleição vão para a dela; sem dados próprios, para a `election` principal
     const election = details.find((detail) => sameAddress(address, detail.address)) ?? main;
 
+    const byCandidacy = allNominees.find((nominee) => sameAddress(address, nominee.candidacy));
+
     switch (functionName) {
       // factory
       case "owner":
-        return candidate ? candidate.item.owner : party ? party.owner : owner;
+        return byCandidacy ? byCandidacy.owner : candidate ? candidate.item.owner : party ? party.owner : owner;
+      case "isActive":
+        return allNominees.find((nominee) => sameAddress(args?.[0], nominee.candidacy))?.active ?? false;
       case "sem":
         return semaphore;
       case "groupId":
@@ -164,15 +208,27 @@ export function mockChain({
         return parties.some((candidate) => sameAddress(args?.[0], candidate.address));
       // party
       case "name":
-        return candidate ? candidate.item.name : party?.name;
+        return (
+          allNominees.find((nominee) => sameAddress(address, nominee.candidate))?.name ??
+          allNominees.find((nominee) => sameAddress(address, nominee.party))?.partyName ??
+          (candidate ? candidate.item.name : party?.name)
+        );
+      case "candidate":
+        return byCandidacy?.candidate;
       case "party":
-        return candidate ? (candidate.item.claimedParty ?? candidate.holder.address) : undefined;
+        return byCandidacy
+          ? byCandidacy.party
+          : candidate
+            ? (candidate.item.claimedParty ?? candidate.holder.address)
+            : undefined;
       case "isCandidate":
         return (party?.candidates ?? []).some((item) => sameAddress(args?.[0], item.address));
       case "pendingOwner":
         return party?.pendingOwner ?? zeroAddress;
       case "donatedBy": {
-        const donated = Object.entries((candidate ? candidate.item.donatedBy : party?.donatedBy) ?? {}).find(([account]) =>
+        const donated = Object.entries(
+          (byCandidacy ? byCandidacy.donatedBy : candidate ? candidate.item.donatedBy : party?.donatedBy) ?? {},
+        ).find(([account]) =>
           sameAddress(args?.[0], account as Address),
         );
 
@@ -189,7 +245,11 @@ export function mockChain({
       case "title":
         return election?.title ?? "Representante da turma";
       case "candidates":
-        return party ? (party.candidates ?? []).map((item) => item.address) : (election?.candidates ?? ["Ana", "Bruno"]);
+        return party
+          ? (party.candidates ?? []).map((item) => item.address)
+          : (election ? nomineesOf(election) : []).filter((nominee) => nominee.active).map((nominee) => nominee.candidacy);
+      case "nominationEnd":
+        return election?.nominationEnd ?? 1n;
       case "votingStart":
         return election?.votingStart;
       case "votingEnd":
@@ -200,7 +260,8 @@ export function mockChain({
         return createdAtBlock;
       case "results":
         return [
-          election?.tally ?? (election?.candidates ?? ["Ana", "Bruno"]).map(() => 0n),
+          election?.tally ??
+            (election ? nomineesOf(election) : []).filter((nominee) => nominee.active).map(() => 0n),
           election?.nullVotes ?? 0n,
           election?.unrevealed ?? 0n,
         ];
@@ -217,6 +278,7 @@ export function mockChain({
   }) as never);
 
   vi.mocked(publicClient.getBalance).mockImplementation((async ({ address }: { address: Address }) =>
+    allNominees.find((nominee) => sameAddress(address, nominee.candidacy))?.balance ??
     (parties.find((party) => sameAddress(address, party.address)) ??
       parties.flatMap((party) => party.candidates ?? []).find((item) => sameAddress(address, item.address)))
       ?.balance ?? 0n) as never);

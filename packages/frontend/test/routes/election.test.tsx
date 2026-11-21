@@ -217,6 +217,90 @@ describe("Election (página da eleição)", () => {
     expect(screen.getByRole("button", { name: "Votar" })).toBeDisabled();
   });
 
+  describe("indicação de candidatos", () => {
+    function nominationElection(overrides: Partial<MockElection> = {}): MockElection {
+      return votingElection({
+        nominationEnd: secondsFromNow(1_800),
+        votingStart: secondsFromNow(3_600),
+        votingEnd: secondsFromNow(7_200),
+        ...overrides,
+      });
+    }
+
+    it("should show the nomination phase and keep the vote closed", async () => {
+      mockChain({ owner: bob, election: nominationElection() });
+      renderRoute(`/elections/${electionAddress}`);
+
+      const phase = await screen.findByRole("group", { name: "Fase" });
+      expect(within(phase).getByText("Indicação de candidatos")).toBeInTheDocument();
+      expect(within(phase).getByText(/Indicações até/)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Votar" })).toBeDisabled();
+      expect(screen.getByText("A votação começa depois da fase de indicação.")).toBeInTheDocument();
+    });
+
+    it("should list the nominees with party and balance, in the order of the vote", async () => {
+      mockChain({
+        owner: bob,
+        election: nominationElection({
+          candidates: [
+            { name: "Ana", partyName: "Partido Alfa", balance: 1_500_000_000_000_000_000n },
+            { name: "Bruno", partyName: "Partido Beta" },
+          ],
+        }),
+      });
+      renderRoute(`/elections/${electionAddress}`);
+
+      const list = await screen.findByRole("list", { name: "Candidatos indicados" });
+      const [first, second] = within(list).getAllByRole("listitem");
+      expect(first).toHaveTextContent("1. Ana");
+      expect(first).toHaveTextContent("Partido Alfa");
+      expect(await within(first).findByLabelText("Saldo de Ana")).toHaveTextContent("1,5");
+      expect(second).toHaveTextContent("2. Bruno");
+      expect(second).toHaveTextContent("Partido Beta");
+    });
+
+    it("should show the empty state when no party nominated yet", async () => {
+      mockChain({ owner: bob, election: nominationElection({ candidates: [] }) });
+      renderRoute(`/elections/${electionAddress}`);
+
+      expect(await screen.findByText("Nenhum candidato indicado ainda.")).toBeInTheDocument();
+    });
+
+    it("should offer only the null vote when voting starts with no nominee", async () => {
+      mockChain({
+        owner: bob,
+        voters: [await aliceRegistered()],
+        election: votingElection({ candidates: [] }),
+      });
+      connectReturningUser({ accounts: [alice] });
+      renderRoute(`/elections/${electionAddress}`);
+
+      const options = await screen.findAllByRole("radio");
+      expect(options).toHaveLength(1);
+      expect(screen.getByRole("radio", { name: "Votar nulo" })).toBeInTheDocument();
+    });
+
+    it("should offer to try again when the election cannot be read", async () => {
+      mockChain({ owner: bob, election: votingElection() });
+      const read = vi.mocked(publicClient.readContract).getMockImplementation()!;
+      vi.mocked(publicClient.readContract).mockImplementation((async (request: { functionName: string }) => {
+        if (request.functionName === "candidates") {
+          throw new Error("rede fora do ar");
+        }
+
+        return read(request as never);
+      }) as never);
+      const user = userEvent.setup();
+      renderRoute(`/elections/${electionAddress}`);
+
+      const retry = await screen.findByRole("button", { name: "Tentar de novo" }, { timeout: 15_000 });
+      vi.mocked(publicClient.readContract).mockImplementation(read);
+      await user.click(retry);
+
+      expect(await screen.findByRole("list", { name: "Candidatos indicados" })).toBeInTheDocument();
+    }, 20_000);
+  });
+
   it("should show the tally after the voting ends", async () => {
     mockChain({
       owner: bob,

@@ -2,6 +2,7 @@
 export { BallotsCard } from "./components/ballots-card";
 export { ElectionList } from "./components/election-list";
 export { ElectionStats } from "./components/election-stats";
+export { NomineesCard } from "./components/nominees-card";
 export { ResultsCard } from "./components/results-card";
 export { VoteCard } from "./components/vote-card";
 export {

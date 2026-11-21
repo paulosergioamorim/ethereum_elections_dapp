@@ -7,6 +7,7 @@ import { runTransaction } from "@/lib/transaction";
 import { requireWalletClient, useWallet } from "@/wallet";
 import { partyKeys } from "./keys";
 import {
+  candidacyQueryOptions,
   candidateQueryOptions,
   donatedQueryOptions,
   partiesQueryOptions,
@@ -192,6 +193,11 @@ export function useCreateParty() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: partyKeys.all }),
   });
+}
+
+/** Saldo, dono e situação de uma candidatura; sem endereço, não consulta. */
+export function useCandidacy(address: Address | undefined) {
+  return useQuery(candidacyQueryOptions(address));
 }
 
 /** Dados de um candidato; sem endereço, não consulta. */

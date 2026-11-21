@@ -11,6 +11,7 @@ export function ElectionStats({ election }: { election: ElectionDetails }) {
   const results = useElectionResults(election.address);
 
   const phaseCaption = {
+    nomination: `Indicações até ${formatTimestamp(election.nominationEnd)}`,
     scheduled: `Começa em ${formatCountdown(Number(election.votingStart) - now)}`,
     voting: `Termina em ${formatCountdown(Number(election.votingEnd) - now)}`,
     tally: `Votação encerrada em ${formatTimestamp(election.votingEnd)}`,

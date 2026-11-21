@@ -9,6 +9,7 @@ import {
   ElectionNotFoundError,
   ElectionStats,
   formatTimestamp,
+  NomineesCard,
   ResultsCard,
   useElection,
   useElectionEvents,
@@ -51,9 +52,16 @@ export function Election() {
               : "Confira a conexão com a rede e recarregue a página."
           }
         />
-        <Button asChild variant="outline">
-          <Link to="/">Voltar para as eleições</Link>
-        </Button>
+        <div className="flex items-center justify-center gap-2">
+          {!notFound && (
+            <Button variant="outline" onClick={() => void election.refetch()}>
+              Tentar de novo
+            </Button>
+          )}
+          <Button asChild variant="outline">
+            <Link to="/">Voltar para as eleições</Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -68,7 +76,8 @@ export function Election() {
         description={
           <div className="space-y-1">
             <p>
-              Votação de {formatTimestamp(data.votingStart)} até {formatTimestamp(data.votingEnd)}.
+              Indicações até {formatTimestamp(data.nominationEnd)}. Votação de{" "}
+              {formatTimestamp(data.votingStart)} até {formatTimestamp(data.votingEnd)}.
             </p>
             <p className="font-mono text-xs break-all">{data.address}</p>
           </div>
@@ -83,6 +92,8 @@ export function Election() {
         <VoteCard election={data} />
         <ResultsCard election={data} />
       </div>
+
+      <NomineesCard election={data} />
 
       <BallotsCard election={data} />
     </div>

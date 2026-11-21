@@ -137,8 +137,9 @@ describe("Admin (aba da autoridade)", () => {
     renderRoute("/admin");
 
     await user.type(await screen.findByLabelText("Título"), "Representante da turma");
-    await user.type(screen.getByLabelText("Candidato 1"), "Ana");
-    await user.type(screen.getByLabelText("Candidato 2"), "Bruno");
+    // sem campos de candidatos: os partidos indicam depois
+    expect(screen.queryByLabelText(/Candidato/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Fim das indicações")).toBeInTheDocument();
 
     const submit = screen.getByRole("button", { name: "Criar eleição" });
     await waitFor(() => expect(submit).toBeEnabled());
@@ -150,7 +151,14 @@ describe("Admin (aba da autoridade)", () => {
     );
     expect(sentCall(wallet)).toMatchObject({
       functionName: "createElection",
-      args: [{ title: "Representante da turma", candidates: ["Ana", "Bruno"] }],
+      args: [
+        {
+          title: "Representante da turma",
+          nominationEnd: expect.any(BigInt),
+          votingStart: expect.any(BigInt),
+          votingEnd: expect.any(BigInt),
+        },
+      ],
     });
   });
 

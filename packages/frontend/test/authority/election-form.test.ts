@@ -17,9 +17,9 @@ function at(minutesFromNow: number) {
 
 const valid: ElectionFormValues = {
   title: "  Representante da turma  ",
-  candidates: ["Ana", "", "Bruno"],
-  votingStart: at(10),
-  votingEnd: at(70),
+  nominationEnd: at(10),
+  votingStart: at(15),
+  votingEnd: at(75),
 };
 
 describe("validateElectionForm", () => {
@@ -29,8 +29,7 @@ describe("validateElectionForm", () => {
     expect(errors).toEqual({});
     expect(input).toEqual({
       title: "Representante da turma",
-      // linhas vazias saem; a ordem fica, porque o índice é a opção de voto
-      candidates: ["Ana", "Bruno"],
+      nominationEnd: BigInt(fromDateTimeLocal(valid.nominationEnd)!),
       votingStart: BigInt(fromDateTimeLocal(valid.votingStart)!),
       votingEnd: BigInt(fromDateTimeLocal(valid.votingEnd)!),
     });
@@ -40,17 +39,35 @@ describe("validateElectionForm", () => {
     expect(validateElectionForm({ ...valid, title: "   " }, nowSeconds).errors.title).toBeDefined();
   });
 
-  it("should require at least two candidates", () => {
-    const { errors, input } = validateElectionForm({ ...valid, candidates: ["Ana", " "] }, nowSeconds);
+  it("should not ask for candidates: the parties nominate them", () => {
+    const { input } = validateElectionForm(valid, nowSeconds);
 
-    expect(errors.candidates).toBe("Informe pelo menos 2 candidatos.");
+    expect(input).not.toHaveProperty("candidates");
+  });
+
+  it("should require the end of the nominations", () => {
+    const { errors, input } = validateElectionForm({ ...valid, nominationEnd: "" }, nowSeconds);
+
+    expect(errors.nominationEnd).toBe("Informe quando as indicações terminam.");
     expect(input).toBeUndefined();
   });
 
-  it("should reject repeated candidates regardless of case", () => {
-    const { errors } = validateElectionForm({ ...valid, candidates: ["Ana", "ana"] }, nowSeconds);
+  it("should require the nominations to end in the future with the transaction margin", () => {
+    const { errors } = validateElectionForm({ ...valid, nominationEnd: at(1) }, nowSeconds);
 
-    expect(errors.candidates).toBe("Há candidatos repetidos.");
+    expect(errors.nominationEnd).toMatch(/2 minutos/);
+  });
+
+  it("should not let the nominations end after the voting starts", () => {
+    const { errors } = validateElectionForm({ ...valid, nominationEnd: at(16) }, nowSeconds);
+
+    expect(errors.nominationEnd).toBe("O fim das indicações não pode ser depois do início da votação.");
+  });
+
+  it("should accept nominations ending exactly when the voting starts", () => {
+    const { errors } = validateElectionForm({ ...valid, nominationEnd: valid.votingStart }, nowSeconds);
+
+    expect(errors.nominationEnd).toBeUndefined();
   });
 
   it("should require the start to leave time for the transaction to be mined", () => {
@@ -76,12 +93,14 @@ describe("datetime-local", () => {
     expect(fromDateTimeLocal("")).toBeUndefined();
   });
 
-  it("should prefill a start at least 10 minutes ahead, on a multiple of 5 minutes", () => {
+  it("should prefill nominations closing in ~10 minutes and the voting 5 minutes later, on multiples of 5 minutes", () => {
     const form = defaultElectionForm(now);
+    const nominationEnd = fromDateTimeLocal(form.nominationEnd)!;
     const start = fromDateTimeLocal(form.votingStart)!;
 
-    expect(start).toBeGreaterThanOrEqual(nowSeconds + 10 * 60 - 60);
-    expect(new Date(start * 1000).getMinutes() % 5).toBe(0);
+    expect(nominationEnd).toBeGreaterThanOrEqual(nowSeconds + 10 * 60 - 60);
+    expect(new Date(nominationEnd * 1000).getMinutes() % 5).toBe(0);
+    expect(start - nominationEnd).toBe(5 * 60);
     expect(fromDateTimeLocal(form.votingEnd)! - start).toBe(60 * 60);
   });
 });
