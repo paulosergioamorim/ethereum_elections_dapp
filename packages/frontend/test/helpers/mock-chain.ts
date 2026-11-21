@@ -1,5 +1,5 @@
 import { buildGroup } from "@elections/shared/group";
-import { encodeEventTopics, type Address, type Hex } from "viem";
+import { encodeEventTopics, zeroAddress, type Address, type Hex } from "viem";
 import { vi } from "vitest";
 import { electionFactoryAbi, factoryAddress } from "@/contracts";
 import { publicClient } from "@/lib/chain";
@@ -21,6 +21,18 @@ export type MockBallot = {
   revealedOption?: bigint;
   /** Apurada por outra pessoa depois da leitura dos eventos: só `isRevealed` sabe disso. */
   revealedMeanwhile?: boolean;
+};
+
+export type MockParty = {
+  address: Address;
+  name: string;
+  /** O presidente. */
+  owner: Address;
+  pendingOwner?: Address;
+  /** Saldo em wei. Padrão: 0. */
+  balance?: bigint;
+  /** Quanto cada conta já doou. */
+  donatedBy?: Record<string, bigint>;
 };
 
 export type MockElection = {
@@ -63,6 +75,7 @@ export function mockChain({
   elections = [],
   election: main,
   details = [],
+  parties = [],
 }: {
   owner: Address;
   voters?: MockVoter[];
@@ -70,6 +83,8 @@ export function mockChain({
   election?: MockElection;
   /** Outras eleições com dados próprios (título, prazos), lidas pelo endereço. */
   details?: MockElection[];
+  /** Partidos da factory, na ordem de criação. Os testes podem mudar os objetos depois (saldo, presidente). */
+  parties?: MockParty[];
 }) {
   // registros em ordem de bloco (e de lista, no mesmo bloco); o índice na árvore segue essa ordem
   const members = voters
@@ -104,6 +119,7 @@ export function mockChain({
     functionName: string;
     args?: readonly unknown[];
   }) => {
+    const party = parties.find((candidate) => sameAddress(address, candidate.address));
     const voter = voters.find((candidate) => sameAddress(args?.[0], candidate.address));
     // leituras de uma eleição vão para a dela; sem dados próprios, para a `election` principal
     const election = details.find((detail) => sameAddress(address, detail.address)) ?? main;
@@ -111,7 +127,7 @@ export function mockChain({
     switch (functionName) {
       // factory
       case "owner":
-        return owner;
+        return party ? party.owner : owner;
       case "sem":
         return semaphore;
       case "groupId":
@@ -125,6 +141,22 @@ export function mockChain({
           ) ||
           elections.some((address) => sameAddress(args?.[0], address))
         );
+      case "parties":
+        return parties.map((candidate) => candidate.address);
+      case "isParty":
+        return parties.some((candidate) => sameAddress(args?.[0], candidate.address));
+      // party
+      case "name":
+        return party?.name;
+      case "pendingOwner":
+        return party?.pendingOwner ?? zeroAddress;
+      case "donatedBy": {
+        const donated = Object.entries(party?.donatedBy ?? {}).find(([account]) =>
+          sameAddress(args?.[0], account as Address),
+        );
+
+        return donated?.[1] ?? 0n;
+      }
       case "isAuthorized":
         return voter ? (voter.authorized ?? true) : false;
       case "commitmentOf":
@@ -162,6 +194,9 @@ export function mockChain({
         throw new Error(`Leitura não simulada nos testes: ${functionName}`);
     }
   }) as never);
+
+  vi.mocked(publicClient.getBalance).mockImplementation((async ({ address }: { address: Address }) =>
+    parties.find((candidate) => sameAddress(address, candidate.address))?.balance ?? 0n) as never);
 
   const events = [
     ...voters.map((voter, index) => ({
@@ -233,6 +268,7 @@ export function mockChain({
 
   return {
     group,
+    parties,
     /** Liga e desliga a falha da leitura dos eventos do grupo (a árvore de eleitores). */
     failGroupLogs(fail: boolean) {
       groupLogsFail = fail;
@@ -246,6 +282,25 @@ export function mockElectionCreatedReceipt(election: Address) {
     abi: electionFactoryAbi,
     eventName: "ElectionCreated",
     args: { election },
+  });
+
+  vi.mocked(publicClient.waitForTransactionReceipt).mockImplementation((async ({
+    hash,
+  }: {
+    hash: string;
+  }) => ({
+    status: "success",
+    transactionHash: hash,
+    logs: [{ address: factoryAddress, topics, data: "0x", blockNumber: 3n, logIndex: 0 }],
+  })) as never);
+}
+
+/** Recibo de `createParty` com o evento `PartyCreated` do novo partido. */
+export function mockPartyCreatedReceipt(party: Address) {
+  const topics = encodeEventTopics({
+    abi: electionFactoryAbi,
+    eventName: "PartyCreated",
+    args: { party },
   });
 
   vi.mocked(publicClient.waitForTransactionReceipt).mockImplementation((async ({

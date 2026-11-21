@@ -1,12 +1,24 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { decodeFunctionData, type Address } from "viem";
-import { describe, expect, it } from "vitest";
+import { decodeFunctionData, encodeEventTopics, type Address } from "viem";
+import { describe, expect, it, vi } from "vitest";
 import { electionFactoryAbi, factoryAddress } from "@/contracts";
+import { publicClient } from "@/lib/chain";
 import { shortAddress } from "@/lib/format";
-import { mockChain, mockElectionCreatedReceipt } from "../helpers/mock-chain";
+import { mockChain, mockElectionCreatedReceipt, mockPartyCreatedReceipt } from "../helpers/mock-chain";
 import { alice, bob, carol, connectReturningUser, type MockWallet } from "../helpers/mock-wallet";
 import { renderRoute } from "../helpers/render";
+
+/** Log `PartyCreated` da factory, como vem no recibo de `createParty`. */
+function partyCreatedLog(party: Address) {
+  const topics = encodeEventTopics({
+    abi: electionFactoryAbi,
+    eventName: "PartyCreated",
+    args: { party },
+  });
+
+  return { address: factoryAddress, topics, data: "0x", blockNumber: 3n, logIndex: 0 };
+}
 
 async function voterRow(address: Address) {
   return (await screen.findByText(shortAddress(address))).closest("li")!;
@@ -164,6 +176,92 @@ describe("Admin (aba da autoridade)", () => {
     expect(sentCall(wallet)).toMatchObject({
       functionName: "removeVoter",
       args: [bob, group.generateMerkleProof(1).siblings],
+    });
+  });
+
+  describe("Criar partido", () => {
+    it("should create a party, link to it and list it under Partidos", async () => {
+      const { parties } = mockChain({ owner: alice, voters: [{ address: bob }] });
+      mockPartyCreatedReceipt(carol);
+      const wallet = connectReturningUser({ accounts: [alice] });
+      vi.mocked(publicClient.waitForTransactionReceipt).mockImplementationOnce((async ({
+        hash,
+      }: {
+        hash: string;
+      }) => {
+        // o contrato registra o partido antes de a lista ser lida de novo
+        parties.push({ address: carol, name: "Partido Verde", owner: bob });
+
+        return {
+          status: "success",
+          transactionHash: hash,
+          logs: [partyCreatedLog(carol)],
+        };
+      }) as never);
+      const user = userEvent.setup();
+      renderRoute("/admin");
+
+      await user.type(await screen.findByLabelText("Nome do partido"), "Partido Verde");
+      await user.type(screen.getByLabelText("Endereço do presidente"), bob);
+      const submit = screen.getByRole("button", { name: "Criar partido" });
+      await waitFor(() => expect(submit).toBeEnabled());
+      await user.click(submit);
+
+      expect(await screen.findByRole("link", { name: /abrir partido/i })).toHaveAttribute(
+        "href",
+        `/parties/${carol}`,
+      );
+      expect(sentCall(wallet)).toMatchObject({
+        to: factoryAddress,
+        functionName: "createParty",
+        args: [bob, "Partido Verde"],
+      });
+
+      await user.click(
+        within(screen.getByRole("navigation", { name: "Principal" })).getByRole("link", {
+          name: "Partidos",
+        }),
+      );
+      expect(await screen.findByRole("link", { name: /Partido Verde/ })).toBeInTheDocument();
+    });
+
+    it("should not open the wallet for an invalid president address", async () => {
+      mockChain({ owner: alice });
+      const wallet = connectReturningUser({ accounts: [alice] });
+      const user = userEvent.setup();
+      renderRoute("/admin");
+
+      await user.type(await screen.findByLabelText("Nome do partido"), "PT");
+      await user.type(screen.getByLabelText("Endereço do presidente"), "0x123");
+      await waitFor(() => expect(screen.getByRole("button", { name: "Criar partido" })).toBeEnabled());
+      await user.click(screen.getByRole("button", { name: "Criar partido" }));
+
+      expect(await screen.findByText("Informe um endereço válido.")).toBeInTheDocument();
+      expect(wallet.transactions).toHaveLength(0);
+    });
+
+    it("should not open the wallet for a blank name", async () => {
+      mockChain({ owner: alice });
+      const wallet = connectReturningUser({ accounts: [alice] });
+      const user = userEvent.setup();
+      renderRoute("/admin");
+
+      await user.type(await screen.findByLabelText("Nome do partido"), "   ");
+      await user.type(screen.getByLabelText("Endereço do presidente"), bob);
+      await waitFor(() => expect(screen.getByRole("button", { name: "Criar partido" })).toBeEnabled());
+      await user.click(screen.getByRole("button", { name: "Criar partido" }));
+
+      expect(await screen.findByText("Informe o nome do partido.")).toBeInTheDocument();
+      expect(wallet.transactions).toHaveLength(0);
+    });
+
+    it("should not show the card to an account that is not the authority", async () => {
+      mockChain({ owner: bob });
+      connectReturningUser({ accounts: [alice] });
+      renderRoute("/admin");
+
+      expect(await screen.findByText(/a conta ativa não é a autoridade/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText("Nome do partido")).not.toBeInTheDocument();
     });
   });
 });

@@ -6,6 +6,7 @@ import path from "node:path";
 const contracts = [
   { name: "electionFactoryAbi", artifact: "artifacts/contracts/ElectionFactory.sol/ElectionFactory.json" },
   { name: "electionAbi", artifact: "artifacts/contracts/Election.sol/Election.json" },
+  { name: "partyAbi", artifact: "artifacts/contracts/Party.sol/Party.json" },
   // eventos do grupo (MemberAdded/MemberRemoved) e erros do LeanIMT
   { name: "semaphoreAbi", artifact: "artifacts/@semaphore-protocol/contracts/Semaphore.sol/Semaphore.json" },
 ];
