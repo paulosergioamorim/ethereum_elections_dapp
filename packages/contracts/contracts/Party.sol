@@ -15,6 +15,7 @@ contract Party is IDonatable, Ownable2Step {
     error InvalidRecipient();
     error InsufficientBalance(uint256 balance, uint256 amount);
     error WithdrawFailed();
+    error RenounceDisabled();
 
     constructor(
         address president,
@@ -50,5 +51,9 @@ contract Party is IDonatable, Ownable2Step {
         }
 
         emit Withdrawn(to, amount);
+    }
+
+    function renounceOwnership() public pure override {
+        revert RenounceDisabled();
     }
 }
