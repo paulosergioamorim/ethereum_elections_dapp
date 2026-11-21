@@ -38,14 +38,14 @@ export function AppHeader() {
   return (
     <header className="border-b">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:gap-6">
-        <div className="flex min-w-0 items-center gap-3 lg:shrink-0">
+        <div className="flex min-w-0 items-center gap-3 lg:min-w-fit lg:flex-1">
           <BrandLink />
           <div className="hidden sm:block">
             <NetworkStatus />
           </div>
         </div>
 
-        <nav aria-label="Principal" className="hidden items-center justify-center gap-6 text-sm lg:flex lg:flex-1">
+        <nav aria-label="Principal" className="hidden items-center justify-center gap-6 text-sm lg:flex lg:shrink-0">
           {visibleLinks.map(({ to, label, end }) => (
             <NavLink key={to} to={to} end={end} className={linkClassName}>
               {label}
@@ -53,7 +53,7 @@ export function AppHeader() {
           ))}
         </nav>
 
-        <div className="hidden lg:block lg:shrink-0">
+        <div className="hidden lg:flex lg:flex-1 lg:justify-end">
           <WalletMenu />
         </div>
 
