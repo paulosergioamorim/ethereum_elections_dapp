@@ -5,11 +5,14 @@
   "type": "module",
   "packageManager": "pnpm@12.17.0",
   "scripts": {
-    "dev": "pnpm --filter @elections/frontend dev",
-    "build:frontend": "pnpm --filter @elections/frontend build",
-    "test:frontend": "pnpm --filter @elections/frontend test",
-    "compile": "pnpm --filter @elections/contracts compile",
-    "test:contracts": "pnpm --filter @elections/contracts test",
-    "export-abis": "pnpm --filter @elections/contracts export-abis"
+    "frontend:dev": "pnpm --filter @elections/frontend dev",
+    "frontend:build": "pnpm --filter @elections/frontend build",
+    "frontend:test": "pnpm --filter @elections/frontend test",
+    "frontend:dev:e2e": "pnpm --filter @elections/frontend dev:e2e",
+    "contracts:compile": "pnpm --filter @elections/contracts compile",
+    "contracts:test": "pnpm --filter @elections/contracts test",
+    "contracts:node:local": "pnpm --filter @elections/contracts node:local",
+    "contracts:deploy:local": "pnpm --filter @elections/contracts deploy:local",
+    "contracts:export-abis": "pnpm --filter @elections/contracts export-abis"
   }
 }

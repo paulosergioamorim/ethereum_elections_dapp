@@ -43,6 +43,12 @@ export default defineConfig({
       type: "edr-simulated",
       chainType: "op",
     },
+    // nó local: `pnpm contracts:node:local` (as contas do nó são desbloqueadas, sem chaves aqui)
+    localhost: {
+      type: "http",
+      chainType: "l1",
+      url: "http://127.0.0.1:8545",
+    },
     sepolia: {
       type: "http",
       chainType: "l1",
