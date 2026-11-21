@@ -3,7 +3,7 @@
 **Approved**: 2026-11-21 - user: "implemente o plano"
 **Settled mid-build:** none
 **Review:** sent at 211b9df
-**Fix pass:** <pending>
+**Fix pass:** done - added a test that creates a candidate from a party built by ElectionFactory.createParty (finding 1); left unchanged: party==address(0) check in Candidate.initialize (no criterion, only Party calls it), partyAbi used to simulate donate/withdraw on candidates (identical signatures, noted in the hook comment), request.md history (annotated)
 
 ## Problem
 

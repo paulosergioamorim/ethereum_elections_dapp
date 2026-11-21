@@ -6,6 +6,7 @@ import {Vm} from "forge-std/Vm.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ElectionFactory} from "../contracts/ElectionFactory.sol";
 import {Party} from "../contracts/Party.sol";
+import {Candidate} from "../contracts/Candidate.sol";
 import {ElectionFactoryTestBase} from "./ElectionFactoryTestBase.sol";
 
 contract ElectionFactoryCreatePartyTest is ElectionFactoryTestBase {
@@ -97,5 +98,16 @@ contract ElectionFactoryCreatePartyTest is ElectionFactoryTestBase {
         assertEq(address(a).balance, 1 ether);
         assertEq(address(b).balance, 0);
         assertEq(b.donatedBy(address(this)), 0);
+    }
+
+    function test_shouldLetFactoryPartyPresidentCreateCandidate() public {
+        Party party = factory.createParty(address(0xA11CE), "Alfa");
+        vm.prank(address(0xA11CE));
+        Candidate candidate = party.createCandidate(address(0xCA11), "Candidato Um");
+        assertEq(candidate.owner(), address(0xCA11));
+        assertEq(candidate.name(), "Candidato Um");
+        assertEq(candidate.party(), address(party));
+        assertTrue(party.isCandidate(address(candidate)));
+        assertEq(party.candidates().length, 1);
     }
 }
