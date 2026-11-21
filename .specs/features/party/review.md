@@ -2,7 +2,7 @@
 
 Reviewed `git diff 1192c49..HEAD` (a3c91e6 spec, ec64778 implementation). No screens, so no capture comparison. I changed no code (mutations were reverted with `git checkout`).
 
-Verdict: the request and the added instruction ("usar Clones e initialize") are implemented correctly. `pnpm test:contracts` passes: 117 (87 Solidity, 30 Node). Criteria 1-19 are covered; two are only partly covered by tests (below). No blocking problems.
+Verdict: the request and the added instruction ("usar Clones e initialize") are implemented correctly. `pnpm contracts:test` passes: 117 (87 Solidity, 30 Node). Criteria 1-19 are covered; two are only partly covered by tests (below). No blocking problems.
 
 ## Request, sentence by sentence
 - Party contract with a president (Ownable2Step): `Party is Initializable, IDonatable, Ownable2Step`; `initialize` calls `_transferOwnership(president)`. Done.
@@ -33,5 +33,5 @@ Verdict: the request and the added instruction ("usar Clones e initialize") are 
 4. Info. `constructor() Ownable(msg.sender)` gives the implementation an owner (the factory). Harmless: the implementation is locked and clone storage is separate. It matches the plan's stated choice.
 
 ## Checked and fine
-- `pnpm export-abis` produces no diff against the committed `abis.ts`.
+- `pnpm contracts:export-abis` produces no diff against the committed `abis.ts`.
 - No remaining `new Party(` calls in the repository.

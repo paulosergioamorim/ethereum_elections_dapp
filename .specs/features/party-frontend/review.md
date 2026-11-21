@@ -7,7 +7,7 @@ Implemented and correct against the request and criteria 1-24. No blocking probl
 ## What I checked
 
 - Request: "implemente a feat `.specs/features/party/` agora no front". The contracts' surface (`createParty`, `parties`, `isParty`, `PartyCreated`, `donate`, `donatedBy`, `withdraw`, `transferOwnership`/`acceptOwnership`, `pendingOwner`, the Party errors) each has a screen or action: Partidos tab, Party page, create card in /admin. Nothing the contracts feature offers was left without a UI, and nothing outside it was added.
-- `pnpm test:frontend`: 29 files, 221 tests pass. `tsc --noEmit` is clean. `git status` shows the working tree clean apart from `.specs/`.
+- `pnpm frontend:test`: 29 files, 221 tests pass. `tsc --noEmit` is clean. `git status` shows the working tree clean apart from `.specs/`.
 - Crit 1: `abis.ts` is byte-identical to `JSON.stringify` of the compiled `ElectionFactory` and `Party` artifacts, so it is in sync. `scripts/export-abis.ts` gains the `partyAbi` entry.
 - Running app (headless shell, 360 and 1280 wide) against the local node, which has two parties and no wallet:
   - `/parties`: two rows, newest first, name, `0x3C44...` president, balance, link; search box; refresh button.

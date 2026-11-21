@@ -15,7 +15,7 @@ When this ships, anyone can browse parties and donate from the app; the factory 
 
 Reuses the app's feature-folder pattern (`factory/`, `elections/`), `runTransaction` for every write, `SectionCard`/`PageHeader`/`StatCard`, the factory-trust check (`isParty`) like `isElection`, and `AuthorityGuard`'s owner gate. Every rule that changes an outcome (who is president, who may accept, parsing and bounding the ETH amount) is a pure function in `src/parties/` covered by vitest in `packages/frontend/test/`; the contracts' own rules stay in the Solidity tests.
 
-1. `pnpm export-abis` -> `electionFactoryAbi` gains `createParty`/`parties`/`isParty`/`PartyCreated`, and `partyAbi` is new (exists: `scripts/export-abis.ts` gains one entry)
+1. `pnpm contracts:export-abis` -> `electionFactoryAbi` gains `createParty`/`parties`/`isParty`/`PartyCreated`, and `partyAbi` is new (exists: `scripts/export-abis.ts` gains one entry)
 2. reader opens `/parties` -> `Parties` route (new) - reads `ElectionFactory.parties()` and each party's `name`, `owner`, balance, lists them with search
 3. owner submits the form in `/admin` -> `CreatePartyCard` (new) - `runTransaction` of `createParty(president, name)`, then refreshes the list
 4. reader opens `/parties/:address` -> `Party` route (new) - checks `isParty` on the factory, reads `name`, `owner`, `pendingOwner`, balance and `donatedBy(account)`
@@ -85,7 +85,7 @@ The factory owner creates a party in the Authority tab; anyone sees it in a new 
 
 **Acceptance Criteria**
 
-1. WHEN `pnpm export-abis` runs THEN `abis.ts` SHALL export `partyAbi` and an `electionFactoryAbi` that contains `createParty`, `parties`, `isParty`
+1. WHEN `pnpm contracts:export-abis` runs THEN `abis.ts` SHALL export `partyAbi` and an `electionFactoryAbi` that contains `createParty`, `parties`, `isParty`
 2. WHEN anyone opens "Partidos" in the header THEN the app SHALL show `/parties` with one row per `parties()` entry: name, president (`shortAddress`), balance (`formatEth`), a link to `/parties/<address>`
 3. WHEN the list has no parties THEN the page SHALL show an empty state with the sentence "Nenhum partido criado ainda."
 4. WHEN a reader types in the search box THEN the list SHALL keep the parties whose name, address or president contains the text, case-insensitive
