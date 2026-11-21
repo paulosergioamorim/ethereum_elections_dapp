@@ -3,8 +3,9 @@ import { About } from "@/routes/about";
 import { Admin } from "@/routes/admin";
 import { Election } from "@/routes/election";
 import { Elections } from "@/routes/elections";
-import { Parties } from "@/routes/parties";
 import { NotFound } from "@/routes/not-found";
+import { Parties } from "@/routes/parties";
+import { Party } from "@/routes/party";
 import { Register } from "@/routes/register";
 import { RootLayout } from "@/routes/root-layout";
 import { RouteError } from "@/routes/route-error";
@@ -19,6 +20,7 @@ export const routes: RouteObject[] = [
       { index: true, Component: Elections },
       { path: "elections/:address", Component: Election },
       { path: "parties", Component: Parties },
+      { path: "parties/:address", Component: Party },
       { path: "register", Component: Register },
       { path: "about", Component: About },
       { path: "admin", Component: Admin },

@@ -30,7 +30,7 @@ type PartyDetails = {
 };
 
 /** O endereço não é um partido criado por esta factory. */
-class PartyNotFoundError extends Error {
+export class PartyNotFoundError extends Error {
   constructor(address: Address) {
     super(`O endereço ${address} não é um partido desta factory.`);
     this.name = "PartyNotFoundError";
@@ -68,5 +68,25 @@ export function partyQueryOptions(address: Address | undefined) {
   return queryOptions({
     queryKey: partyKeys.detail(address ?? ""),
     queryFn: address ? () => fetchParty(address) : skipToken,
+    // "não é um partido da factory" é definitivo: tentar de novo só atrasa a tela
+    retry: (failures: number, error: Error) => !(error instanceof PartyNotFoundError) && failures < 3,
+  });
+}
+
+/** Quanto uma conta já doou ao partido (em wei); sem conta, não consulta. */
+export function donatedQueryOptions(address: Address | undefined, account: Address | undefined) {
+  return queryOptions({
+    queryKey: partyKeys.donated(address ?? "", account ?? ""),
+    queryFn:
+      address && account
+        ? async () =>
+            publicClient.readContract({
+              address,
+              abi: partyAbi,
+              functionName: "donatedBy",
+              args: [account],
+              blockNumber: await freshBlockNumber(),
+            })
+        : skipToken,
   });
 }

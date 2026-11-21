@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterParties } from "@/parties";
+import { filterParties } from "@/parties/search";
 import { alice, bob } from "../helpers/mock-wallet";
 
 const parties = [

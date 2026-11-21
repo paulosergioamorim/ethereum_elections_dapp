@@ -1,15 +1,59 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { parseEventLogs, type Address } from "viem";
-import { electionFactoryAbi, factoryAddress } from "@/contracts";
+import { electionFactoryAbi, factoryAddress, partyAbi } from "@/contracts";
 import { publicClient } from "@/lib/chain";
+import { formatEth, shortAddress } from "@/lib/format";
 import { runTransaction } from "@/lib/transaction";
 import { requireWalletClient, useWallet } from "@/wallet";
 import { partyKeys } from "./keys";
-import { partiesQueryOptions } from "./queries";
+import { donatedQueryOptions, partiesQueryOptions, partyQueryOptions } from "./queries";
 
 /** Partidos criados pela factory (leitura pública, sem carteira). */
 export function useParties() {
   return useQuery(partiesQueryOptions);
+}
+
+/** Dados de um partido; sem endereço, não consulta. */
+export function useParty(address: Address | undefined) {
+  return useQuery(partyQueryOptions(address));
+}
+
+/** Quanto a conta ativa já doou ao partido; sem conta, não consulta. */
+export function useDonated(address: Address | undefined, account: Address | undefined) {
+  return useQuery(donatedQueryOptions(address, account));
+}
+
+/** `donate`: envia ETH ao partido. */
+export function useDonate(party: Address) {
+  const { walletClient } = useWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: { errorTitle: "Não foi possível doar" },
+    mutationFn: async (value: bigint) => {
+      const client = requireWalletClient(walletClient);
+
+      return runTransaction(
+        {
+          signing: "Confirme a doação na carteira.",
+          details: `${formatEth(value)} para ${shortAddress(party)}`,
+          success: "Doação enviada.",
+        },
+        async () => {
+          const { request } = await publicClient.simulateContract({
+            account: client.account,
+            address: party,
+            abi: partyAbi,
+            functionName: "donate",
+            value,
+          });
+
+          return client.writeContract(request);
+        },
+      );
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: partyKeys.all }),
+  });
 }
 
 export type CreatePartyInput = {
