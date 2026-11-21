@@ -2,7 +2,7 @@
 
 **Approved**: 2026-11-21 - user: "implemente"
 **Settled mid-build:** none
-**Review:** <pending>
+**Review:** sent at f194b8c
 **Fix pass:** <pending>
 
 ## Problem
