@@ -13,3 +13,7 @@ Captures: none.
 - Withdraw: the candidate's own wallet (owner of the Candidate contract).
 - Number: user wrote "sem número de partidos", clarified as "Candidato sem número": no number field, only name + wallet.
 - Screens: party page + candidate page.
+
+## Follow-up (2026-11-21)
+
+- User: "atualize a spec para o Candidato também usar Clones com initialize, assim como Election e Party" - replaces the `new Candidate` deployment in the Model answer above.

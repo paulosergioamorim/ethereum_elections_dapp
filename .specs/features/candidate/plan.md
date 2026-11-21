@@ -2,7 +2,7 @@
 
 **Approved**: 2026-11-21 - user: "implemente o plano"
 **Settled mid-build:** none
-**Review:** <pending>
+**Review:** sent at 211b9df
 **Fix pass:** <pending>
 
 ## Problem
