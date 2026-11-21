@@ -5,6 +5,8 @@
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { network } from "hardhat";
+import ElectionFactoryModule from "../ignition/modules/ElectionFactory.js";
 
 const deploymentId = process.env.DEPLOYMENT_ID;
 if (!deploymentId) {
@@ -15,17 +17,12 @@ if (!deploymentId) {
 const packageRoot = path.resolve(import.meta.dirname, "..");
 const run = (cmd: string, args: string[]) => execFileSync(cmd, args, { cwd: packageRoot, stdio: "inherit" });
 
-run("pnpm", [
-  "hardhat", "ignition", "deploy", "ignition/modules/ElectionFactory.ts",
-  "--network", "sepolia", "--deployment-id", deploymentId,
-]);
-
+// Tudo no mesmo processo: o keystore do Hardhat resolve `SEPOLIA_RPC_URL` e `SEPOLIA_PRIVATE_KEY`
+// (`configVariable` no hardhat.config.ts) e pergunta a senha uma vez, sem subprocesso sem terminal.
+const { ignition } = await network.create("sepolia");
+const { factory } = await ignition.deploy(ElectionFactoryModule, { deploymentId });
+const address = factory.address;
 const deployment = path.resolve(packageRoot, "ignition/deployments", deploymentId);
-const addresses = JSON.parse(await readFile(path.resolve(deployment, "deployed_addresses.json"), "utf8"));
-const address: string | undefined = addresses["ElectionFactoryModule#ElectionFactory"];
-if (!address) {
-  throw new Error("Endereço da ElectionFactory não encontrado em deployed_addresses.json");
-}
 
 // o bloco de implantação vem do recibo da transação, registrado no journal
 const journal = await readFile(path.resolve(deployment, "journal.jsonl"), "utf8");
