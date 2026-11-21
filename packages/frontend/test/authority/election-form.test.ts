@@ -58,6 +58,21 @@ describe("validateElectionForm", () => {
     expect(errors.nominationEnd).toMatch(/2 minutos/);
   });
 
+  it("should accept nominations ending exactly at the transaction margin and refuse one second before", () => {
+    const limit = nowSeconds + MIN_START_DELAY_SECONDS;
+    const at = (seconds: number) => toDateTimeLocal(new Date(seconds * 1000));
+    // o campo tem precisão de minutos: o limite cai em um minuto cheio
+    const wholeMinute = Math.ceil(limit / 60) * 60;
+
+    expect(
+      validateElectionForm({ ...valid, nominationEnd: at(wholeMinute) }, nowSeconds).errors.nominationEnd,
+    ).toBeUndefined();
+    expect(
+      validateElectionForm({ ...valid, nominationEnd: at(wholeMinute - 60) }, wholeMinute - 60 + MIN_START_DELAY_SECONDS - 1)
+        .errors.nominationEnd,
+    ).toMatch(/2 minutos/);
+  });
+
   it("should not let the nominations end after the voting starts", () => {
     const { errors } = validateElectionForm({ ...valid, nominationEnd: at(16) }, nowSeconds);
 

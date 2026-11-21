@@ -250,6 +250,23 @@ contract ElectionFactoryNominateTest is ElectionFactoryNominationTestBase {
         assertEq(factory.nomineesOf(address(election)).length, 1);
     }
 
+    // critério 20: saldo e doadores sobrevivem à retirada e à nova indicação
+    function test_shouldKeepBalanceAndDonorsWhenNominatedAgain() public {
+        Election election = _election();
+        Party party = _party(president1);
+        Candidate candidate = _candidate(party);
+        Candidacy first = _nominate(election, candidate);
+        address donor = address(0xD0);
+        vm.deal(donor, 2 ether);
+        vm.prank(donor);
+        first.donate{value: 2 ether}();
+        vm.prank(president1);
+        factory.withdraw(election, party);
+        Candidacy again = _nominate(election, candidate);
+        assertEq(address(again).balance, 2 ether);
+        assertEq(again.donatedBy(donor), 2 ether);
+    }
+
     // critério 21
     function test_shouldRevertAfterNominationEndForANominee() public {
         Election election = _election();

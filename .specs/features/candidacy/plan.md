@@ -3,7 +3,7 @@
 **Approved**: 2026-11-21 - user: "implemente"
 **Settled mid-build:** none
 **Review:** sent at f194b8c
-**Fix pass:** <pending>
+**Fix pass:** done - added a test that balance and donors survive a re-nomination (criterion 20) and a boundary test for the 120 s nomination margin (criterion 36); fixed the stale "Os dois contratos" comment; untracked the stray .agents/scheduled_tasks.lock and ignored it; left unchanged: Sacar lives in the "Suas candidaturas com saldo" card, not in the nominee row (criterion 52, behaviour and criterion 54 hold), a nominee read failure uses the page-wide error with "Tentar de novo" (criterion 40), no route test for the revert toast (criterion 48; the messages are covered in errors.test.ts)
 
 ## Problem
 

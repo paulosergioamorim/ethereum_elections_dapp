@@ -6,7 +6,7 @@ import {Ownable, Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step
 import {IDonatable} from "./IDonatable.sol";
 
 /// @dev Doações e saque compartilhados por `Party`, `Candidate` e `Candidacy`. O `owner()`
-/// saca. Sem `receive` nem `fallback`: só `donate()` aceita ETH. Os dois
+/// saca. Sem `receive` nem `fallback`: só `donate()` aceita ETH. Os três
 /// contratos são clones EIP-1167 configurados por `initialize`.
 abstract contract DonationHolder is Initializable, IDonatable, Ownable2Step {
     mapping(address => uint256) public donatedBy;
