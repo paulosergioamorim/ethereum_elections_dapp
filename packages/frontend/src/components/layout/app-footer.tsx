@@ -19,8 +19,8 @@ export function AppFooter() {
   return (
     <footer className="border-t">
       <div className="mx-auto grid max-w-6xl gap-3 px-6 py-6 text-xs text-muted-foreground sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-        <p className="flex items-center gap-2">
-          <VoteIcon className="size-4" />
+        <p className="flex items-start gap-2 sm:items-center">
+          <VoteIcon className="mt-0.5 size-4 shrink-0 sm:mt-0" />
           Eleições · Voto em segredo, apuração à vista.
         </p>
 

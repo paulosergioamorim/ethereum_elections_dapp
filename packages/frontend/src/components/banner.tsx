@@ -32,7 +32,7 @@ export function Banner({
   return (
     <div role={variant === "info" || !variant ? "status" : "alert"} className={bannerVariants({ variant })}>
       {Icon && <Icon className="size-4 shrink-0" />}
-      <p className="min-w-0 flex-1">{children}</p>
+      <p className="min-w-48 flex-1">{children}</p>
       {action && <div className="shrink-0">{action}</div>}
     </div>
   );
