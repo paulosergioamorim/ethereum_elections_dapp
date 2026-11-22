@@ -9,6 +9,7 @@
     "frontend:build": "pnpm --filter @elections/frontend build",
     "frontend:test": "pnpm --filter @elections/frontend test",
     "frontend:dev:e2e": "pnpm --filter @elections/frontend dev:e2e",
+    "scripts:test": "node --test scripts/select-packages.test.mjs",
     "shared:test": "pnpm --filter @elections/shared test",
     "contracts:compile": "pnpm --filter @elections/contracts compile",
     "contracts:test": "pnpm --filter @elections/contracts test",

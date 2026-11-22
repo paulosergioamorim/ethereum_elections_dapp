@@ -5,7 +5,10 @@
     "src/index.{ts,tsx,js,jsx}",
     "src/main.{ts,tsx,js,jsx}",
     // Injetado no navegador pelo Playwright (addInitScript); nenhum módulo o importa.
-    "packages/frontend/e2e/test-wallet.js"
+    "packages/frontend/e2e/test-wallet.js",
+    // Chamado pelo `.husky/pre-commit` e pelo teste do `node --test`; nenhum módulo o importa.
+    "scripts/precommit.mjs",
+    "scripts/select-packages.test.mjs"
   ],
   "workspaces": {
     "patterns": [
