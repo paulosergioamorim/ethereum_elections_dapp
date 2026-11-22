@@ -3,7 +3,7 @@
 **Approved**: 2026-11-22 - user: "Sim"
 **Settled mid-build:** none
 **Review:** sent at 3f42db5
-**Fix pass:** pending
+**Fix pass:** done - teste do S1 criterion 5 passa a conferir o partido novo na lista da própria aba; spinner do atualizar (S2 7), nit de classes no jsdom, `registered` duplicado e `setParams` sem outros parâmetros ficam como estão (sem efeito hoje)
 
 ## Problem
 

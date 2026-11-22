@@ -268,7 +268,7 @@ describe("Admin (aba da autoridade)", () => {
       expect(screen.getByText("Informe um endereço válido.")).toBeInTheDocument();
     });
 
-    it("should create a party, link to it and list it under Partidos", async () => {
+    it("should create a party, link to it and list it in the tab and under Partidos", async () => {
       const { parties } = mockChain({ owner: alice, voters: [{ address: bob }] });
       mockPartyCreatedReceipt(carol);
       const wallet = connectReturningUser({ accounts: [alice] });
@@ -304,6 +304,11 @@ describe("Admin (aba da autoridade)", () => {
         functionName: "createParty",
         args: [bob, "Partido Beta"],
       });
+      // a lista da própria aba já mostra o partido novo, sem sair dela
+      expect(await screen.findByRole("link", { name: /Partido Beta\s*Presidente/ })).toHaveAttribute(
+        "href",
+        `/parties/${carol}`,
+      );
 
       await user.click(
         within(screen.getByRole("navigation", { name: "Principal" })).getByRole("link", {
