@@ -1,6 +1,5 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
-import { deriveIdentity, identityMessage } from "../../../shared/identity.js";
+import { describe, expect, it } from "vitest";
+import { deriveIdentity, identityMessage } from "../identity.js";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 describe("shared/identity", () => {
@@ -15,7 +14,7 @@ describe("shared/identity", () => {
     const sig1 = await account.signMessage({ message });
     const sig2 = await account.signMessage({ message });
 
-    assert.equal(deriveIdentity(sig1).commitment, deriveIdentity(sig2).commitment);
+    expect(deriveIdentity(sig1).commitment).toBe(deriveIdentity(sig2).commitment);
   });
 
   // assinaturas diferentes → commitments diferentes
@@ -26,12 +25,12 @@ describe("shared/identity", () => {
     const sig1 = await a1.signMessage({ message });
     const sig2 = await a2.signMessage({ message });
 
-    assert.notEqual(deriveIdentity(sig1).commitment, deriveIdentity(sig2).commitment);
+    expect(deriveIdentity(sig1).commitment).not.toBe(deriveIdentity(sig2).commitment);
   });
 
   // identityMessage muda com chainId e com a factory (a mesma carteira tem identidades diferentes por implantação)
   it("should bind the message to the chain id and the factory", () => {
-    assert.notEqual(identityMessage(456, factory), message);   // só o chainId mudou
-    assert.notEqual(identityMessage(chainId, "0x456"), message); // só a factory mudou
+    expect(identityMessage(456, factory)).not.toBe(message);   // só o chainId mudou
+    expect(identityMessage(chainId, "0x456")).not.toBe(message); // só a factory mudou
   });
 });

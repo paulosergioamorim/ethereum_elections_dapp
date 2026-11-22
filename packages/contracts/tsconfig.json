@@ -5,8 +5,6 @@
     "target": "es2023",
     "skipLibCheck": true,
     "outDir": "dist",
-    // os testes importam ../shared (por caminho relativo), que fica fora deste pacote
-    "rootDir": "..",
     "types": ["node"],
     "verbatimModuleSyntax": true
   },

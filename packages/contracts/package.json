@@ -9,9 +9,11 @@
     "node:local": "hardhat node",
     "deploy:local": "hardhat run scripts/deploy-local.ts --network localhost",
     "update-vars:sepolia": "hardhat run scripts/update-sepolia-vars.ts",
-    "export-abis": "hardhat run scripts/export-abis.ts"
+    "export-abis": "hardhat run scripts/export-abis.ts",
+    "precommit": "hardhat test"
   },
   "devDependencies": {
+    "@elections/shared": "workspace:*",
     "@nomicfoundation/hardhat-ignition": "3.1.9",
     "@nomicfoundation/hardhat-toolbox-viem": "5.0.7",
     "@nomicfoundation/hardhat-viem": "3.1.0",
