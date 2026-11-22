@@ -118,6 +118,21 @@ describe("Admin (aba da autoridade)", () => {
     });
   });
 
+  it("should authorize each typed wallet once, checksummed, and empty the field", async () => {
+    mockChain({ owner: alice });
+    const wallet = connectReturningUser({ accounts: [alice] });
+    const user = userEvent.setup();
+    renderRoute("/admin");
+
+    await user.type(await screen.findByLabelText("Endereços"), `${bob.toLowerCase()} ${bob}`);
+    expect(screen.getByText("1 nova")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Autorizar carteira" }));
+
+    await waitFor(() => expect(wallet.transactions).toHaveLength(1));
+    expect(sentCall(wallet)).toMatchObject({ functionName: "addAuthorizedVoters", args: [[bob]] });
+    await waitFor(() => expect(screen.getByLabelText("Endereços")).toHaveValue(""));
+  });
+
   it("should not create an election before any voter registers", async () => {
     mockChain({ owner: alice, voters: [{ address: bob }] });
     connectReturningUser({ accounts: [alice] });
@@ -189,6 +204,22 @@ describe("Admin (aba da autoridade)", () => {
   });
 
   describe("Criar partido", () => {
+    it("should clear only the edited field's error when the user types", async () => {
+      mockChain({ owner: alice, voters: [{ address: bob }] });
+      connectReturningUser({ accounts: [alice] });
+      const user = userEvent.setup();
+      renderRoute("/admin");
+
+      await user.click(await screen.findByRole("button", { name: "Criar partido" }));
+      expect(await screen.findByText("Informe o nome do partido.")).toBeInTheDocument();
+      expect(screen.getByText("Informe um endereço válido.")).toBeInTheDocument();
+
+      await user.type(screen.getByLabelText("Nome do partido"), "A");
+
+      expect(screen.queryByText("Informe o nome do partido.")).not.toBeInTheDocument();
+      expect(screen.getByText("Informe um endereço válido.")).toBeInTheDocument();
+    });
+
     it("should create a party, link to it and list it under Partidos", async () => {
       const { parties } = mockChain({ owner: alice, voters: [{ address: bob }] });
       mockPartyCreatedReceipt(carol);

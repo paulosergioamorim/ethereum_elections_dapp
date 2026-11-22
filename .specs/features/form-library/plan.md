@@ -2,8 +2,8 @@
 
 **Approved**: 2026-11-22 - user: "pode construir"
 **Settled mid-build:** none
-**Review:** <pending>
-**Fix pass:** <pending>
+**Review:** sent at 8c9813b
+**Fix pass:** done - added tests only (no functional bug found): wrong-chain reason with the button disabled (criterion 5), withdraw clears only the amount and keeps the destination (11), exact over-balance sentence and exact-balance boundary through the real resolver, authorize deduplicates and empties the field, error cleared only on the edited field for create party (4), votingStart margin boundary (7); left unchanged: no test pins the schemas being rebuilt on each render (finding 7), the withdraw over-balance test covers the live balance only at render time
 
 ## Problem
 

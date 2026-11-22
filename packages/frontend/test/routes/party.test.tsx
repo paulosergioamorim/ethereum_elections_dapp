@@ -170,6 +170,26 @@ describe("Party (página do partido)", () => {
         args: [carol, 5n * 10n ** 17n],
       });
       expect(await within(stat("Saldo")).findByText("1,5 ETH")).toBeInTheDocument();
+      expect(screen.getByLabelText("Valor em ETH", { selector: "#withdraw-amount" })).toHaveValue("");
+      expect(screen.getByLabelText("Destino")).toHaveValue(carol);
+    });
+
+    it("should accept exactly the balance and refuse one wei more, with the exact sentence", async () => {
+      const { wallet, user } = await openAs(bob, newParty({ owner: bob, balance: 2n * 10n ** 18n }));
+      const amount = await screen.findByLabelText("Valor em ETH", { selector: "#withdraw-amount" });
+
+      await user.type(amount, "2.000000000000000001");
+      await user.click(screen.getByRole("button", { name: "Sacar" }));
+
+      expect(await screen.findByText("O valor é maior que o saldo do partido.")).toBeInTheDocument();
+      expect(wallet!.transactions).toHaveLength(0);
+
+      await user.clear(amount);
+      await user.type(amount, "2");
+      await user.click(screen.getByRole("button", { name: "Sacar" }));
+
+      await waitFor(() => expect(wallet!.transactions).toHaveLength(1));
+      expect(sentCall(wallet!)).toMatchObject({ functionName: "withdraw", args: [bob, 2n * 10n ** 18n] });
     });
 
     it("should fill the field with the exact balance, not the rounded one", async () => {
@@ -380,6 +400,15 @@ describe("Party (página do partido)", () => {
       expect(await screen.findByRole("link", { name: /Candidato Um/ })).toHaveAttribute("href", `/candidates/${one.address}`);
       expect(screen.getByLabelText("Nome do candidato")).toHaveValue("");
       expect(screen.getByLabelText("Carteira do candidato")).toHaveValue("");
+    });
+
+    it("should show the wrong-chain reason and keep the create button disabled", async () => {
+      mockChain({ owner: carol, parties: [newParty({ owner: bob })] });
+      connectReturningUser({ accounts: [bob], chainId: 1 });
+      renderRoute(`/parties/${party}`);
+
+      expect((await screen.findAllByText(/Troque a carteira para a/)).length).toBeGreaterThan(0);
+      expect(screen.getByRole("button", { name: "Criar candidato" })).toBeDisabled();
     });
 
     it("should clear only the edited field's error when the user types", async () => {
