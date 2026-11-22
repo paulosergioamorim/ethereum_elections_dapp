@@ -1,0 +1,13 @@
+# Dead code, complexidade e duplicação (como o hook que o `fallow hooks install` gerava).
+if command -v fallow >/dev/null 2>&1; then
+  UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)"
+  if [ -n "$UPSTREAM" ]; then
+    BASE="$(git merge-base "$UPSTREAM" HEAD 2>/dev/null || echo "$UPSTREAM")"
+  else
+    BASE="main"
+  fi
+  fallow audit --base "$BASE" --quiet --gate-marker pre-commit || exit 1
+fi
+
+# Testes e typecheck só dos pacotes tocados (e dos que dependem deles).
+node scripts/precommit.mjs

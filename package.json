@@ -15,6 +15,10 @@
     "contracts:test": "pnpm --filter @elections/contracts test",
     "contracts:node:local": "pnpm --filter @elections/contracts node:local",
     "contracts:deploy:local": "pnpm --filter @elections/contracts deploy:local",
-    "contracts:export-abis": "pnpm --filter @elections/contracts export-abis"
+    "contracts:export-abis": "pnpm --filter @elections/contracts export-abis",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "9.1.7"
   }
 }
