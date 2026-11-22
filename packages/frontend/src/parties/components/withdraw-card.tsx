@@ -1,6 +1,8 @@
+import { valibotResolver } from "@hookform/resolvers/valibot";
 import { BanknoteArrowDownIcon, Loader2Icon } from "lucide-react";
-import { useState, type SubmitEvent } from "react";
+import { useForm } from "react-hook-form";
 import { formatEther, type Address } from "viem";
+import { FieldError } from "@/components/field-error";
 import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,15 +10,7 @@ import { Label } from "@/components/ui/label";
 import { appChain } from "@/lib/chain";
 import { useWallet } from "@/wallet";
 import { useWithdraw } from "../hooks";
-import { validateWithdrawForm, type WithdrawErrors } from "../withdraw";
-
-function FieldError({ id, message }: { id: string; message: string | undefined }) {
-  return message ? (
-    <p id={id} className="text-xs text-destructive">
-      {message}
-    </p>
-  ) : null;
-}
+import { withdrawSchema, type WithdrawInput, type WithdrawValues } from "../withdraw";
 
 /** Sacar de um contrato de doações (partido ou candidato): só o `owner` vê. O destino começa no endereço dele. */
 export function WithdrawCard({
@@ -35,28 +29,27 @@ export function WithdrawCard({
   /** Prefixo dos ids dos campos: precisa ser único quando há mais de um formulário na página. */
   idPrefix?: string;
 }) {
+  // react-hook-form: o React Compiler memoizaria `register` e o `reset` não limparia os campos (AD-001)
+  "use no memo";
+
   const { isWrongChain } = useWallet();
   const withdraw = useWithdraw(target);
-  const [values, setValues] = useState({ to: owner as string, amount: "" });
-  const [errors, setErrors] = useState<WithdrawErrors>({});
+  const { register, handleSubmit, setValue, resetField, clearErrors, formState } = useForm<WithdrawValues, unknown, WithdrawInput>({
+    defaultValues: { to: owner, amount: "" },
+    // o saldo muda: o schema é montado com o de agora
+    resolver: valibotResolver(withdrawSchema(balance, holder)),
+    reValidateMode: "onSubmit",
+  });
+  const { errors } = formState;
   const reason = isWrongChain ? `Troque a carteira para a ${appChain.name}.` : undefined;
 
-  function update(field: "to" | "amount", value: string) {
-    setValues((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({ ...current, [field]: undefined }));
-  }
-
-  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const { errors: found, input } = validateWithdrawForm(values, balance, holder);
-    setErrors(found);
-
-    if (!input || reason) {
+  const onSubmit = handleSubmit((input) => {
+    if (reason) {
       return;
     }
 
-    withdraw.mutate(input, { onSuccess: () => update("amount", "") });
-  }
+    withdraw.mutate(input, { onSuccess: () => resetField("amount", { defaultValue: "" }) });
+  });
 
   return (
     <SectionCard
@@ -70,13 +63,12 @@ export function WithdrawCard({
           <Label htmlFor={`${idPrefix}-to`}>Destino</Label>
           <Input
             id={`${idPrefix}-to`}
-            value={values.to}
-            onChange={(event) => update("to", event.target.value)}
+            {...register("to", { onChange: () => clearErrors("to") })}
             className="font-mono"
             aria-invalid={!!errors.to}
             aria-describedby={errors.to ? `${idPrefix}-to-error` : undefined}
           />
-          <FieldError id={`${idPrefix}-to-error`} message={errors.to} />
+          <FieldError id={`${idPrefix}-to-error`} message={errors.to?.message} />
         </div>
 
         <div className="space-y-2">
@@ -85,8 +77,7 @@ export function WithdrawCard({
             <Input
               id={`${idPrefix}-amount`}
               inputMode="decimal"
-              value={values.amount}
-              onChange={(event) => update("amount", event.target.value)}
+              {...register("amount", { onChange: () => clearErrors("amount") })}
               placeholder="0,1"
               aria-invalid={!!errors.amount}
               aria-describedby={errors.amount ? `${idPrefix}-amount-error` : undefined}
@@ -94,12 +85,15 @@ export function WithdrawCard({
             <Button
               type="button"
               variant="outline"
-              onClick={() => update("amount", formatEther(balance))}
+              onClick={() => {
+                setValue("amount", formatEther(balance));
+                clearErrors("amount");
+              }}
             >
               Sacar tudo
             </Button>
           </div>
-          <FieldError id={`${idPrefix}-amount-error`} message={errors.amount} />
+          <FieldError id={`${idPrefix}-amount-error`} message={errors.amount?.message} />
         </div>
 
         <Button type="submit" className="h-10 w-full" disabled={!!reason || withdraw.isPending}>

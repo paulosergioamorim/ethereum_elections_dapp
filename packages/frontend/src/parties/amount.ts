@@ -1,4 +1,5 @@
 import { parseEther } from "viem";
+import { parsedField } from "@/lib/schema";
 
 /**
  * Quantia em ETH digitada ("0.5" ou "1,5") para wei. Aceita de 1 wei (18 casas) em diante; vazio,
@@ -25,3 +26,10 @@ export function parseEthAmount(text: string): { wei: bigint } | { error: string 
 
   return { wei };
 }
+
+/** Campo de quantia em ETH digitada, saindo em wei. */
+export const ethAmountField = parsedField((text) => {
+  const parsed = parseEthAmount(text);
+
+  return "error" in parsed ? parsed : { value: parsed.wei };
+});

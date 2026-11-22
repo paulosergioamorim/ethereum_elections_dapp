@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import { getAddress, isAddress, zeroAddress, type Address } from "viem";
-import { parseForm, parsedField, requiredText, type FormErrors } from "@/lib/schema";
+import { parseForm, parsedField, requiredText } from "@/lib/schema";
 
 /** Endereço digitado: válido e diferente do endereço zero, ou o erro em uma frase. */
 export function parseAddress(text: string): { address: Address } | { error: string } {
@@ -18,20 +18,19 @@ export function parseAddress(text: string): { address: Address } | { error: stri
 }
 
 /** Campo de endereço: válido e não zero, saindo com checksum. */
-const addressField = parsedField((text) => {
+export const addressField = parsedField((text) => {
   const parsed = parseAddress(text);
 
   return "error" in parsed ? parsed : { value: parsed.address };
 });
 
 /** As regras do `createParty`: presidente válido (não zero) e nome com algum texto. */
-const createPartySchema = v.object({
+export const createPartySchema = v.object({
   president: addressField,
   name: requiredText("Informe o nome do partido."),
 });
 
 export type CreatePartyValues = v.InferInput<typeof createPartySchema>;
-export type CreatePartyErrors = FormErrors<CreatePartyValues>;
 
 export function validateCreatePartyForm(values: CreatePartyValues) {
   return parseForm(createPartySchema, values);

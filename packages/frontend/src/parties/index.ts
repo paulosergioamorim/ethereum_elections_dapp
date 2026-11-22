@@ -5,9 +5,9 @@ export { AcceptCard, HandoverCard } from "./components/handover-card";
 export { PartyList } from "./components/party-list";
 export { WithdrawCard } from "./components/withdraw-card";
 export {
+  createPartySchema,
   validateCreateCandidateForm,
   validateCreatePartyForm,
-  type CreatePartyErrors,
   type CreatePartyValues,
 } from "./forms";
 export {
