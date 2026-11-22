@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { getAddress, isAddress, zeroAddress, type Address } from "viem";
 
 export type ParsedVoterAddresses = {
@@ -47,4 +48,18 @@ export function parseVoterAddresses(
   }
 
   return parsed;
+}
+
+/**
+ * O formulário de autorizar carteiras: o texto vira a lista de endereços novos. Sem nenhum novo, o
+ * envio não passa (o botão já fica desabilitado, então a mensagem não aparece).
+ */
+export function authorizeVotersSchema(authorized: readonly Address[]) {
+  return v.object({
+    addresses: v.pipe(
+      v.string(),
+      v.transform((text) => parseVoterAddresses(text, authorized).toAuthorize),
+      v.minLength(1, "Informe ao menos um endereço novo."),
+    ),
+  });
 }

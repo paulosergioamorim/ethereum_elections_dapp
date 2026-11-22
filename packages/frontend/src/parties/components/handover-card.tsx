@@ -1,34 +1,39 @@
+import { valibotResolver } from "@hookform/resolvers/valibot";
 import { KeyRoundIcon, Loader2Icon } from "lucide-react";
-import { useState, type SubmitEvent } from "react";
+import { useForm } from "react-hook-form";
 import type { Address } from "viem";
+import { FieldError } from "@/components/field-error";
 import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { appChain } from "@/lib/chain";
 import { useWallet } from "@/wallet";
-import { parseAddress } from "../forms";
+import { handoverSchema } from "../forms";
 import { useAcceptPresidency, useTransferPresidency } from "../hooks";
 
 /** Passar a presidência: o presidente indica o sucessor, que ainda precisa aceitar. */
 export function HandoverCard({ party }: { party: Address }) {
+  // react-hook-form: o React Compiler memoizaria `register` e o `reset` não limparia os campos (AD-001)
+  "use no memo";
+
   const { isWrongChain } = useWallet();
   const transfer = useTransferPresidency(party);
-  const [successor, setSuccessor] = useState("");
-  const [error, setError] = useState<string>();
+  const { register, handleSubmit, reset, clearErrors, formState } = useForm({
+    defaultValues: { successor: "" },
+    resolver: valibotResolver(handoverSchema),
+    reValidateMode: "onSubmit",
+  });
+  const { errors } = formState;
   const reason = isWrongChain ? `Troque a carteira para a ${appChain.name}.` : undefined;
 
-  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const parsed = parseAddress(successor);
-    setError("error" in parsed ? parsed.error : undefined);
-
-    if ("error" in parsed || reason) {
+  const onSubmit = handleSubmit(({ successor }) => {
+    if (reason) {
       return;
     }
 
-    transfer.mutate(parsed.address, { onSuccess: () => setSuccessor("") });
-  }
+    transfer.mutate(successor, { onSuccess: () => reset() });
+  });
 
   return (
     <SectionCard
@@ -42,21 +47,13 @@ export function HandoverCard({ party }: { party: Address }) {
           <Label htmlFor="handover-successor">Endereço do novo presidente</Label>
           <Input
             id="handover-successor"
-            value={successor}
-            onChange={(event) => {
-              setSuccessor(event.target.value);
-              setError(undefined);
-            }}
+            {...register("successor", { onChange: () => clearErrors("successor") })}
             placeholder="0x…"
             className="font-mono"
-            aria-invalid={!!error}
-            aria-describedby={error ? "handover-successor-error" : undefined}
+            aria-invalid={!!errors.successor}
+            aria-describedby={errors.successor ? "handover-successor-error" : undefined}
           />
-          {error && (
-            <p id="handover-successor-error" className="text-xs text-destructive">
-              {error}
-            </p>
-          )}
+          <FieldError id="handover-successor-error" message={errors.successor?.message} />
         </div>
 
         <Button type="submit" className="h-10 w-full" disabled={!!reason || transfer.isPending}>

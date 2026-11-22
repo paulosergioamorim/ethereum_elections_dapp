@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { parseEther } from "viem";
 import { parsedField } from "@/lib/schema";
 
@@ -33,3 +34,6 @@ export const ethAmountField = parsedField((text) => {
 
   return "error" in parsed ? parsed : { value: parsed.wei };
 });
+
+/** O formulário de doação: só a quantia, em wei na saída. */
+export const donateSchema = v.object({ amount: ethAmountField });

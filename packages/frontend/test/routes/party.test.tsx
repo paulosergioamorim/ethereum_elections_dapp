@@ -91,6 +91,7 @@ describe("Party (página do partido)", () => {
       });
       expect(await within(stat("Saldo")).findByText("1,5 ETH")).toBeInTheDocument();
       expect(within(stat("Você já doou")).getByText("1,5 ETH")).toBeInTheDocument();
+      expect(screen.getByLabelText("Valor em ETH")).toHaveValue("");
     });
 
     it.each(["", "abc", "0", "-1", "0.0000000000000000001"])(
@@ -232,6 +233,7 @@ describe("Party (página do partido)", () => {
       expect(await screen.findByText(/Presidente pendente:/)).toHaveTextContent(alice);
       expect(within(stat("Presidente")).getByText(shortAddress(bob))).toBeInTheDocument();
       expect(screen.getByLabelText("Destino")).toBeInTheDocument();
+      expect(screen.getByLabelText("Endereço do novo presidente")).toHaveValue("");
     });
 
     it.each([

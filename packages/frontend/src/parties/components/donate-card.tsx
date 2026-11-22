@@ -1,13 +1,15 @@
+import { valibotResolver } from "@hookform/resolvers/valibot";
 import { HandCoinsIcon, Loader2Icon } from "lucide-react";
-import { useState, type SubmitEvent } from "react";
+import { useForm } from "react-hook-form";
 import type { Address } from "viem";
+import { FieldError } from "@/components/field-error";
 import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { appChain } from "@/lib/chain";
 import { useWallet } from "@/wallet";
-import { parseEthAmount } from "../amount";
+import { donateSchema } from "../amount";
 import { useDonate } from "../hooks";
 
 /** Doar ETH a um contrato de doações (partido ou candidato). Sem carteira (ou na rede errada), o botão se desabilita com o motivo. */
@@ -21,10 +23,17 @@ export function DonateCard({
   /** Prefixo dos ids dos campos: precisa ser único quando há mais de um formulário na página. */
   idPrefix?: string;
 }) {
+  // react-hook-form: o React Compiler memoizaria `register` e o `reset` não limparia os campos (AD-001)
+  "use no memo";
+
   const { status, isWrongChain } = useWallet();
   const donate = useDonate(target);
-  const [amount, setAmount] = useState("");
-  const [error, setError] = useState<string>();
+  const { register, handleSubmit, reset, clearErrors, formState } = useForm({
+    defaultValues: { amount: "" },
+    resolver: valibotResolver(donateSchema),
+    reValidateMode: "onSubmit",
+  });
+  const { errors } = formState;
 
   const reason =
     status !== "connected"
@@ -33,17 +42,13 @@ export function DonateCard({
         ? `Troque a carteira para a ${appChain.name}.`
         : undefined;
 
-  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const parsed = parseEthAmount(amount);
-    setError("error" in parsed ? parsed.error : undefined);
-
-    if ("error" in parsed || reason) {
+  const onSubmit = handleSubmit(({ amount }) => {
+    if (reason) {
       return;
     }
 
-    donate.mutate(parsed.wei, { onSuccess: () => setAmount("") });
-  }
+    donate.mutate(amount, { onSuccess: () => reset() });
+  });
 
   return (
     <SectionCard
@@ -58,20 +63,12 @@ export function DonateCard({
           <Input
             id={`${idPrefix}-amount`}
             inputMode="decimal"
-            value={amount}
-            onChange={(event) => {
-              setAmount(event.target.value);
-              setError(undefined);
-            }}
+            {...register("amount", { onChange: () => clearErrors("amount") })}
             placeholder="0,1"
-            aria-invalid={!!error}
-            aria-describedby={error ? `${idPrefix}-amount-error` : undefined}
+            aria-invalid={!!errors.amount}
+            aria-describedby={errors.amount ? `${idPrefix}-amount-error` : undefined}
           />
-          {error && (
-            <p id={`${idPrefix}-amount-error`} className="text-xs text-destructive">
-              {error}
-            </p>
-          )}
+          <FieldError id={`${idPrefix}-amount-error`} message={errors.amount?.message} />
         </div>
 
         <Button type="submit" className="h-10 w-full" disabled={!!reason || donate.isPending}>

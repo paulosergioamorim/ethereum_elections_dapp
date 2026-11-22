@@ -1,5 +1,6 @@
+import { valibotResolver } from "@hookform/resolvers/valibot";
 import { Loader2Icon, UserPlusIcon } from "lucide-react";
-import { useState, type SubmitEvent } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import type { Address } from "viem";
 import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthority, useAuthorizeVoters } from "@/factory";
 import { useWallet } from "@/wallet";
-import { parseVoterAddresses } from "../parse-voter-addresses";
+import { authorizeVotersSchema, parseVoterAddresses } from "../parse-voter-addresses";
 
 function plural(count: number, singular: string, pluralForm: string) {
   return `${count} ${count === 1 ? singular : pluralForm}`;
@@ -15,26 +16,28 @@ function plural(count: number, singular: string, pluralForm: string) {
 
 /** Passo 1 da autoridade: liberar as carteiras que poderão se registrar como eleitoras. */
 export function AuthorizeVotersCard({ authorized }: { authorized: readonly Address[] | undefined }) {
+  // react-hook-form: o React Compiler memoizaria `register` e o `reset` não limparia os campos (AD-001)
+  "use no memo";
+
   const { canAdminister, reason } = useAuthority();
   const { accounts } = useWallet();
   const authorize = useAuthorizeVoters();
-  const [text, setText] = useState("");
+  const { register, handleSubmit, reset, setValue, getValues, control } = useForm({
+    defaultValues: { addresses: "" },
+    // as carteiras já autorizadas mudam: o schema é montado com as de agora
+    resolver: valibotResolver(authorizeVotersSchema(authorized ?? [])),
+  });
+  const text = useWatch({ control, name: "addresses" });
 
   const parsed = parseVoterAddresses(text, authorized ?? []);
   // as contas conectadas na carteira (inclusive a da autoridade), para montar a turma de teste
   function addConnectedAccounts() {
-    setText((current) => [current.trim(), ...accounts].filter(Boolean).join("\n"));
+    setValue("addresses", [getValues("addresses").trim(), ...accounts].filter(Boolean).join("\n"));
   }
 
-  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (parsed.toAuthorize.length === 0) {
-      return;
-    }
-
-    authorize.mutate(parsed.toAuthorize, { onSuccess: () => setText("") });
-  }
+  const onSubmit = handleSubmit(({ addresses }) => {
+    authorize.mutate(addresses, { onSuccess: () => reset() });
+  });
 
   const hasInput = text.trim().length > 0;
 
@@ -59,8 +62,7 @@ export function AuthorizeVotersCard({ authorized }: { authorized: readonly Addre
 
           <Textarea
             id="voter-addresses"
-            value={text}
-            onChange={(event) => setText(event.target.value)}
+            {...register("addresses")}
             placeholder={"0x…\n0x…"}
             rows={4}
             spellCheck={false}

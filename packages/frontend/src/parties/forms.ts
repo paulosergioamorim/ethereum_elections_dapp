@@ -3,7 +3,7 @@ import { getAddress, isAddress, zeroAddress, type Address } from "viem";
 import { parseForm, parsedField, requiredText } from "@/lib/schema";
 
 /** Endereço digitado: válido e diferente do endereço zero, ou o erro em uma frase. */
-export function parseAddress(text: string): { address: Address } | { error: string } {
+function parseAddress(text: string): { address: Address } | { error: string } {
   const value = text.trim();
 
   if (!isAddress(value, { strict: false })) {
@@ -47,3 +47,6 @@ export type CreateCandidateValues = v.InferInput<typeof createCandidateSchema>;
 export function validateCreateCandidateForm(values: CreateCandidateValues) {
   return parseForm(createCandidateSchema, values);
 }
+
+/** O formulário de passar a presidência: o endereço do sucessor, com checksum na saída. */
+export const handoverSchema = v.object({ successor: addressField });
