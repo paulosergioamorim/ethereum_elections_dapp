@@ -23,5 +23,5 @@ export function createWrapper() {
 export function renderRoute(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
 
-  return render(<RouterProvider router={router} />, { wrapper: createWrapper() });
+  return { router, ...render(<RouterProvider router={router} />, { wrapper: createWrapper() }) };
 }

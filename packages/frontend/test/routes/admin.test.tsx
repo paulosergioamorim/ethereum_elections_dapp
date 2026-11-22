@@ -136,7 +136,7 @@ describe("Admin (aba da autoridade)", () => {
   it("should not create an election before any voter registers", async () => {
     mockChain({ owner: alice, voters: [{ address: bob }] });
     connectReturningUser({ accounts: [alice] });
-    renderRoute("/admin");
+    renderRoute("/admin?aba=eleicoes");
 
     expect(
       await screen.findByText("Registre pelo menos um eleitor antes de criar a eleição."),
@@ -149,7 +149,7 @@ describe("Admin (aba da autoridade)", () => {
     mockElectionCreatedReceipt(carol);
     const wallet = connectReturningUser({ accounts: [alice] });
     const user = userEvent.setup();
-    renderRoute("/admin");
+    renderRoute("/admin?aba=eleicoes");
 
     await user.type(await screen.findByLabelText("Título"), "Representante da turma");
     // sem campos de candidatos: os partidos indicam depois
@@ -203,12 +203,60 @@ describe("Admin (aba da autoridade)", () => {
     });
   });
 
+  describe("Abas", () => {
+    it("should open on Eleitores and switch tabs through the URL", async () => {
+      mockChain({ owner: alice, voters: [{ address: bob, commitment: 11n }] });
+      connectReturningUser({ accounts: [alice] });
+      const user = userEvent.setup();
+      const { router } = renderRoute("/admin");
+
+      expect(await screen.findByLabelText("Endereços")).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "Eleitores", selected: true })).toBeInTheDocument();
+      expect(screen.queryByLabelText("Título")).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole("tab", { name: "Eleições" }));
+      expect(await screen.findByLabelText("Título")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Endereços")).not.toBeInTheDocument();
+      expect(router.state.location.search).toBe("?aba=eleicoes");
+
+      await user.click(screen.getByRole("tab", { name: "Partidos" }));
+      expect(await screen.findByLabelText("Nome do partido")).toBeInTheDocument();
+      expect(router.state.location.search).toBe("?aba=partidos");
+    });
+
+    it.each(["/admin", "/admin?aba=xyz"])("should fall back to Eleitores for %s", async (path) => {
+      mockChain({ owner: alice });
+      connectReturningUser({ accounts: [alice] });
+      renderRoute(path);
+
+      expect(await screen.findByLabelText("Endereços")).toBeInTheDocument();
+    });
+
+    it("should open the tab named in the URL", async () => {
+      mockChain({ owner: alice });
+      connectReturningUser({ accounts: [alice] });
+      renderRoute("/admin?aba=partidos");
+
+      expect(await screen.findByLabelText("Nome do partido")).toBeInTheDocument();
+      expect(await screen.findByText("Nenhum partido criado ainda.")).toBeInTheDocument();
+    });
+
+    it("should show no tabs to an account that is not the authority", async () => {
+      mockChain({ owner: bob });
+      connectReturningUser({ accounts: [alice] });
+      renderRoute("/admin?aba=eleicoes");
+
+      expect(await screen.findByText(/a conta ativa não é a autoridade/i)).toBeInTheDocument();
+      expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    });
+  });
+
   describe("Criar partido", () => {
     it("should clear only the edited field's error when the user types", async () => {
       mockChain({ owner: alice, voters: [{ address: bob }] });
       connectReturningUser({ accounts: [alice] });
       const user = userEvent.setup();
-      renderRoute("/admin");
+      renderRoute("/admin?aba=partidos");
 
       await user.click(await screen.findByRole("button", { name: "Criar partido" }));
       expect(await screen.findByText("Informe o nome do partido.")).toBeInTheDocument();
@@ -239,7 +287,7 @@ describe("Admin (aba da autoridade)", () => {
         };
       }) as never);
       const user = userEvent.setup();
-      renderRoute("/admin");
+      renderRoute("/admin?aba=partidos");
 
       await user.type(await screen.findByLabelText("Nome do partido"), "Partido Beta");
       await user.type(screen.getByLabelText("Endereço do presidente"), bob);
@@ -269,7 +317,7 @@ describe("Admin (aba da autoridade)", () => {
       mockChain({ owner: alice });
       const wallet = connectReturningUser({ accounts: [alice] });
       const user = userEvent.setup();
-      renderRoute("/admin");
+      renderRoute("/admin?aba=partidos");
 
       await user.type(await screen.findByLabelText("Nome do partido"), "Alfa");
       await user.type(screen.getByLabelText("Endereço do presidente"), "0x123");
@@ -284,7 +332,7 @@ describe("Admin (aba da autoridade)", () => {
       mockChain({ owner: alice });
       const wallet = connectReturningUser({ accounts: [alice] });
       const user = userEvent.setup();
-      renderRoute("/admin");
+      renderRoute("/admin?aba=partidos");
 
       await user.type(await screen.findByLabelText("Nome do partido"), "   ");
       await user.type(screen.getByLabelText("Endereço do presidente"), bob);
@@ -298,7 +346,7 @@ describe("Admin (aba da autoridade)", () => {
     it("should not show the card to an account that is not the authority", async () => {
       mockChain({ owner: bob });
       connectReturningUser({ accounts: [alice] });
-      renderRoute("/admin");
+      renderRoute("/admin?aba=partidos");
 
       expect(await screen.findByText(/a conta ativa não é a autoridade/i)).toBeInTheDocument();
       expect(screen.queryByLabelText("Nome do partido")).not.toBeInTheDocument();

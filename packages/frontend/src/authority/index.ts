@@ -1,6 +1,3 @@
 // Aba da autoridade: registro de eleitores e criação de eleições.
+export { AdminTabs } from "./components/admin-tabs";
 export { AuthorityGuard } from "./components/authority-guard";
-export { AuthorizeVotersCard } from "./components/authorize-voters-card";
-export { CreateElectionCard } from "./components/create-election-card";
-export { CreatePartyCard } from "./components/create-party-card";
-export { VotersCard } from "./components/voters-card";

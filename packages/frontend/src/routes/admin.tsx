@@ -1,11 +1,5 @@
 import { UserCheckIcon, UsersIcon, VoteIcon } from "lucide-react";
-import {
-  AuthorityGuard,
-  AuthorizeVotersCard,
-  CreateElectionCard,
-  CreatePartyCard,
-  VotersCard,
-} from "@/authority";
+import { AdminTabs, AuthorityGuard } from "@/authority";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { useElections } from "@/elections";
@@ -54,15 +48,7 @@ function AuthorityPanel() {
         />
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <AuthorizeVotersCard authorized={voters.data?.map((voter) => voter.address)} />
-          <CreateElectionCard registeredVoters={registered} />
-          <CreatePartyCard />
-        </div>
-
-        <VotersCard />
-      </div>
+      <AdminTabs />
     </div>
   );
 }
