@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { IconBubble } from "@/components/icon-bubble";
 import { Button } from "@/components/ui/button";
 import { formatEth, shortAddress } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { filterParties } from "../search";
 import { partyQueryOptions } from "../queries";
 
@@ -16,12 +17,15 @@ export function PartyList({
   isPending,
   onRetry,
   query = "",
+  layout = "list",
 }: {
   parties: readonly Address[] | undefined;
   isError: boolean;
   isPending: boolean;
   onRetry: () => void;
   query?: string;
+  /** `grid`: um card por partido, em 1, 2 ou 3 colunas conforme a largura. */
+  layout?: "list" | "grid";
 }) {
   // dados de cada partido, os mesmos (e no mesmo cache) da página dele
   const details = useQueries({
@@ -76,27 +80,45 @@ export function PartyList({
     );
   }
 
+  const grid = layout === "grid";
+
   return (
-    <ul className="space-y-2">
+    <ul className={grid ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" : "space-y-2"}>
       {visible.map(({ address, number, name, owner, balance }) => (
         <li key={address}>
           <Link
             to={`/parties/${address}`}
-            className="flex items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-muted"
+            className={cn(
+              "transition-colors hover:bg-muted",
+              grid
+                ? "flex h-full flex-col gap-4 rounded-2xl border bg-card p-5"
+                : "flex items-center gap-3 rounded-xl border p-3",
+            )}
           >
-            <IconBubble icon={FlagIcon} />
+            {grid ? (
+              <span className="flex items-center justify-between">
+                <IconBubble icon={FlagIcon} />
+                <ArrowRightIcon className="size-4 text-muted-foreground" />
+              </span>
+            ) : (
+              <IconBubble icon={FlagIcon} />
+            )}
 
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-medium">{name ?? `Partido #${number}`}</span>
+              <span className={cn("block truncate font-medium", grid && "text-lg font-semibold")}>
+                {name ?? `Partido #${number}`}
+              </span>
               <span className="block truncate text-xs text-muted-foreground">
                 Presidente{" "}
                 <span className="font-mono">{owner ? shortAddress(owner) : "…"}</span>
               </span>
             </span>
 
-            <span className="text-sm font-medium">{balance === undefined ? "…" : formatEth(balance)}</span>
+            <span className={cn("text-sm font-medium", grid && "text-xl font-semibold")}>
+              {balance === undefined ? "…" : formatEth(balance)}
+            </span>
 
-            <ArrowRightIcon className="size-4 text-muted-foreground" />
+            {!grid && <ArrowRightIcon className="size-4 text-muted-foreground" />}
           </Link>
         </li>
       ))}

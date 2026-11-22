@@ -39,6 +39,16 @@ describe("Parties (aba Partidos)", () => {
     expect(await within(row).findByText("1,5 ETH")).toBeInTheDocument();
   });
 
+  it("should show a single title and a grid of cards, without a wrapping card", async () => {
+    mockChain({ owner: bob, parties: [alfa, beta] });
+    renderRoute("/parties");
+    await partyLinks();
+
+    expect(screen.getAllByRole("heading", { name: "Partidos" })).toHaveLength(1);
+    expect(screen.getByRole("list")).toHaveClass("grid", "sm:grid-cols-2", "lg:grid-cols-3");
+    expect(screen.getByRole("button", { name: "Atualizar partidos" })).toBeInTheDocument();
+  });
+
   it("should show the empty state when there are no parties", async () => {
     mockChain({ owner: bob });
     renderRoute("/parties");

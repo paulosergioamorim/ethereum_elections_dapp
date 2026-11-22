@@ -19,7 +19,7 @@ Reaproveita `PageHeader`, `StatCard`, `SectionCard`, `AuthorizeVotersCard`, `Vot
 2. `Admin` (exists) -> `AuthorityGuard` (exists) - mantém o bloqueio para quem não é a autoridade
 3. `AuthorityPanel` (exists) - mostra as 3 métricas e `AdminTabs` (new), que lê e grava `aba` na URL
 4. cada aba monta cards já existentes lado a lado: Eleitores = autorizar + `VotersCard`; Eleições = `CreateElectionCard` + `ElectionList`; Partidos = `CreatePartyCard` + `PartyList`
-5. leitor abre `/parties` -> `Parties` (exists) - cabeçalho com busca e atualizar, e `PartyGrid` (new) no lugar de `PartyList` em linhas
+5. leitor abre `/parties` -> `Parties` (exists) - cabeçalho com busca e atualizar, `PartyList` (exists) ganha `layout="grid"`
 
 ```mermaid
 flowchart LR
@@ -29,7 +29,7 @@ flowchart LR
   T --> V[4 VotersCard]
   T --> E[4 ElectionList]
   T --> L[4 PartyList]
-  R[5 Parties] --> D[5 PartyGrid]
+  R[5 Parties] --> D[5 PartyList]
 ```
 
 **Changes underneath**
@@ -38,7 +38,7 @@ flowchart LR
 | --- | --- |
 | domain | none |
 | stored data | nothing to migrate |
-| readers | `/admin` (tabs) e `/parties` (grade); `PartyList` passa a ser usado também na aba Partidos da Autoridade ou é substituído por `PartyGrid` (decisão do builder, sem mudar critérios) |
+| readers | `/admin` (tabs) e `/parties` (grade); `PartyList` passa a ser usado também na aba Partidos da Autoridade com `layout="grid"` em `/parties` |
 
 ```mermaid
 erDiagram
