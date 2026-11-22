@@ -2,7 +2,7 @@
 
 **Approved**: 2026-11-22 - user: "Sim"
 **Settled mid-build:** none
-**Review:** pending
+**Review:** sent at 3f42db5
 **Fix pass:** pending
 
 ## Problem
