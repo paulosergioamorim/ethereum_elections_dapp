@@ -1,5 +1,6 @@
+import * as v from "valibot";
 import { getAddress, isAddress, zeroAddress, type Address } from "viem";
-import type { CreateCandidateInput, CreatePartyInput } from "./hooks";
+import { parseForm, parsedField, requiredText, type FormErrors } from "@/lib/schema";
 
 /** Endereço digitado: válido e diferente do endereço zero, ou o erro em uma frase. */
 export function parseAddress(text: string): { address: Address } | { error: string } {
@@ -16,56 +17,34 @@ export function parseAddress(text: string): { address: Address } | { error: stri
   return { address: getAddress(value.toLowerCase()) };
 }
 
-export type CreatePartyValues = { president: string; name: string };
-export type CreatePartyErrors = Partial<Record<keyof CreatePartyValues, string>>;
+/** Campo de endereço: válido e não zero, saindo com checksum. */
+const addressField = parsedField((text) => {
+  const parsed = parseAddress(text);
+
+  return "error" in parsed ? parsed : { value: parsed.address };
+});
 
 /** As regras do `createParty`: presidente válido (não zero) e nome com algum texto. */
-export function validateCreatePartyForm(values: CreatePartyValues): {
-  errors: CreatePartyErrors;
-  input?: CreatePartyInput;
-} {
-  const errors: CreatePartyErrors = {};
-  const president = parseAddress(values.president);
-  const name = values.name.trim();
+const createPartySchema = v.object({
+  president: addressField,
+  name: requiredText("Informe o nome do partido."),
+});
 
-  if ("error" in president) {
-    errors.president = president.error;
-  }
+export type CreatePartyValues = v.InferInput<typeof createPartySchema>;
+export type CreatePartyErrors = FormErrors<CreatePartyValues>;
 
-  if (name === "") {
-    errors.name = "Informe o nome do partido.";
-  }
-
-  if ("error" in president || name === "") {
-    return { errors };
-  }
-
-  return { errors, input: { president: president.address, name } };
+export function validateCreatePartyForm(values: CreatePartyValues) {
+  return parseForm(createPartySchema, values);
 }
 
-export type CreateCandidateValues = { candidate: string; name: string };
-export type CreateCandidateErrors = Partial<Record<keyof CreateCandidateValues, string>>;
-
 /** As regras do `createCandidate`: carteira válida (não zero) e nome com algum texto. */
-export function validateCreateCandidateForm(values: CreateCandidateValues): {
-  errors: CreateCandidateErrors;
-  input?: CreateCandidateInput;
-} {
-  const errors: CreateCandidateErrors = {};
-  const candidate = parseAddress(values.candidate);
-  const name = values.name.trim();
+export const createCandidateSchema = v.object({
+  candidate: addressField,
+  name: requiredText("Informe o nome do candidato."),
+});
 
-  if ("error" in candidate) {
-    errors.candidate = candidate.error;
-  }
+export type CreateCandidateValues = v.InferInput<typeof createCandidateSchema>;
 
-  if (name === "") {
-    errors.name = "Informe o nome do candidato.";
-  }
-
-  if ("error" in candidate || name === "") {
-    return { errors };
-  }
-
-  return { errors, input: { candidate: candidate.address, name } };
+export function validateCreateCandidateForm(values: CreateCandidateValues) {
+  return parseForm(createCandidateSchema, values);
 }

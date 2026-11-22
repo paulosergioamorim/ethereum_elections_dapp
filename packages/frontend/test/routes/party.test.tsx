@@ -378,6 +378,19 @@ describe("Party (página do partido)", () => {
       expect(await screen.findByRole("link", { name: /Candidato Um/ })).toHaveAttribute("href", `/candidates/${one.address}`);
     });
 
+    it("should clear only the edited field's error when the user types", async () => {
+      const { user } = await openAs(bob, newParty({ owner: bob }));
+
+      await user.click(await screen.findByRole("button", { name: "Criar candidato" }));
+      expect(await screen.findByText("Informe o nome do candidato.")).toBeInTheDocument();
+      expect(screen.getByText(/endereço válido/)).toBeInTheDocument();
+
+      await user.type(screen.getByLabelText("Nome do candidato"), "A");
+
+      expect(screen.queryByText("Informe o nome do candidato.")).not.toBeInTheDocument();
+      expect(screen.getByText(/endereço válido/)).toBeInTheDocument();
+    });
+
     it.each([
       ["wallet is not an address", "0x123", "Candidato Um", /endereço válido/],
       ["wallet is the zero address", "0x0000000000000000000000000000000000000000", "Candidato Um", /endereço zero/],
