@@ -1,14 +1,16 @@
+import * as v from "valibot";
 import type { CreateElectionInput } from "@/factory";
+import { addFieldIssue, parseForm } from "@/lib/schema";
 
 /** Valores do formulário; as datas no formato do `<input type="datetime-local">` (horário local). */
-export type ElectionFormValues = {
-  title: string;
-  nominationEnd: string;
-  votingStart: string;
-  votingEnd: string;
-};
+const electionFields = v.object({
+  title: v.string(),
+  nominationEnd: v.string(),
+  votingStart: v.string(),
+  votingEnd: v.string(),
+});
 
-export type ElectionFormErrors = Partial<Record<keyof ElectionFormValues, string>>;
+export type ElectionFormValues = v.InferInput<typeof electionFields>;
 
 /**
  * O contrato exige `votingStart >= block.timestamp` no bloco em que a transação entra.
@@ -55,59 +57,73 @@ export function defaultElectionForm(now = new Date()): ElectionFormValues {
 /**
  * As mesmas regras do `initialize` do Election, mais o título obrigatório e a margem no fim das
  * indicações e no início da votação. Os candidatos não entram aqui: os partidos os indicam depois.
+ * O schema depende do horário (`nowSeconds`), então é montado a cada envio.
  */
-export function validateElectionForm(
-  values: ElectionFormValues,
-  nowSeconds: number,
-): { errors: ElectionFormErrors; input?: CreateElectionInput } {
-  const errors: ElectionFormErrors = {};
-  const title = values.title.trim();
-  const nominationEnd = fromDateTimeLocal(values.nominationEnd);
-  const start = fromDateTimeLocal(values.votingStart);
-  const end = fromDateTimeLocal(values.votingEnd);
+export function electionFormSchema(nowSeconds: number) {
+  return v.pipe(
+    electionFields,
+    v.rawTransform(({ dataset, addIssue, NEVER }): CreateElectionInput => {
+      const values = dataset.value;
+      const issue = (key: keyof ElectionFormValues, message: string) =>
+        addFieldIssue(addIssue, values, key, message);
+      const title = values.title.trim();
+      const nominationEnd = fromDateTimeLocal(values.nominationEnd);
+      const start = fromDateTimeLocal(values.votingStart);
+      const end = fromDateTimeLocal(values.votingEnd);
+      let failed = false;
 
-  if (!title) {
-    errors.title = "Dê um título à eleição.";
-  }
+      if (!title) {
+        issue("title", "Dê um título à eleição.");
+        failed = true;
+      }
 
-  if (nominationEnd === undefined) {
-    errors.nominationEnd = "Informe quando as indicações terminam.";
-  } else if (nominationEnd < nowSeconds + MIN_START_DELAY_SECONDS) {
-    errors.nominationEnd =
-      "O fim das indicações precisa estar pelo menos 2 minutos no futuro, para dar tempo de a transação ser confirmada.";
-  } else if (start !== undefined && nominationEnd > start) {
-    errors.nominationEnd = "O fim das indicações não pode ser depois do início da votação.";
-  }
+      if (nominationEnd === undefined) {
+        issue("nominationEnd", "Informe quando as indicações terminam.");
+        failed = true;
+      } else if (nominationEnd < nowSeconds + MIN_START_DELAY_SECONDS) {
+        issue(
+          "nominationEnd",
+          "O fim das indicações precisa estar pelo menos 2 minutos no futuro, para dar tempo de a transação ser confirmada.",
+        );
+        failed = true;
+      } else if (start !== undefined && nominationEnd > start) {
+        issue("nominationEnd", "O fim das indicações não pode ser depois do início da votação.");
+        failed = true;
+      }
 
-  if (start === undefined) {
-    errors.votingStart = "Informe quando a votação começa.";
-  } else if (start < nowSeconds + MIN_START_DELAY_SECONDS) {
-    errors.votingStart =
-      "O início precisa estar pelo menos 2 minutos no futuro, para dar tempo de a transação ser confirmada.";
-  }
+      if (start === undefined) {
+        issue("votingStart", "Informe quando a votação começa.");
+        failed = true;
+      } else if (start < nowSeconds + MIN_START_DELAY_SECONDS) {
+        issue(
+          "votingStart",
+          "O início precisa estar pelo menos 2 minutos no futuro, para dar tempo de a transação ser confirmada.",
+        );
+        failed = true;
+      }
 
-  if (end === undefined) {
-    errors.votingEnd = "Informe quando a votação termina.";
-  } else if (start !== undefined && end <= start) {
-    errors.votingEnd = "O fim precisa ser depois do início.";
-  }
+      if (end === undefined) {
+        issue("votingEnd", "Informe quando a votação termina.");
+        failed = true;
+      } else if (start !== undefined && end <= start) {
+        issue("votingEnd", "O fim precisa ser depois do início.");
+        failed = true;
+      }
 
-  if (
-    Object.keys(errors).length > 0 ||
-    nominationEnd === undefined ||
-    start === undefined ||
-    end === undefined
-  ) {
-    return { errors };
-  }
+      if (failed || nominationEnd === undefined || start === undefined || end === undefined) {
+        return NEVER;
+      }
 
-  return {
-    errors,
-    input: {
-      title,
-      nominationEnd: BigInt(nominationEnd),
-      votingStart: BigInt(start),
-      votingEnd: BigInt(end),
-    },
-  };
+      return {
+        title,
+        nominationEnd: BigInt(nominationEnd),
+        votingStart: BigInt(start),
+        votingEnd: BigInt(end),
+      };
+    }),
+  );
+}
+
+export function validateElectionForm(values: ElectionFormValues, nowSeconds: number) {
+  return parseForm(electionFormSchema(nowSeconds), values);
 }

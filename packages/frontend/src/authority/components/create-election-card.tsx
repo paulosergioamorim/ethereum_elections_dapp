@@ -1,31 +1,37 @@
+import { valibotResolver } from "@hookform/resolvers/valibot";
 import { ArrowRightIcon, CalendarPlusIcon, Loader2Icon } from "lucide-react";
-import { useState, type SubmitEvent } from "react";
+import { useState } from "react";
+import { useForm, type Resolver } from "react-hook-form";
 import { Link } from "react-router";
 import type { Address } from "viem";
 import { Banner } from "@/components/banner";
+import { FieldError } from "@/components/field-error";
 import { InfoNote } from "@/components/info-note";
 import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuthority, useCreateElection } from "@/factory";
-import { useFormState } from "@/lib/use-form-state";
-import { defaultElectionForm, validateElectionForm, type ElectionFormValues } from "../election-form";
+import { useAuthority, useCreateElection, type CreateElectionInput } from "@/factory";
+import { defaultElectionForm, electionFormSchema, type ElectionFormValues } from "../election-form";
 
-function FieldError({ id, message }: { id: string; message: string | undefined }) {
-  return message ? (
-    <p id={id} className="text-xs text-destructive">
-      {message}
-    </p>
-  ) : null;
-}
+/** O schema depende do horário: é montado com o de agora a cada validação. */
+const electionResolver: Resolver<ElectionFormValues, unknown, CreateElectionInput> = (values, context, options) =>
+  valibotResolver(electionFormSchema(Math.floor(Date.now() / 1000)))(values, context, options);
 
 /** Passo 3 da autoridade: criar a eleição, que congela os eleitores registrados até agora. */
 export function CreateElectionCard({ registeredVoters }: { registeredVoters: number | undefined }) {
+  // react-hook-form: o React Compiler memoizaria `register` e o `reset` não limparia os campos (AD-001)
+  "use no memo";
+
   const { reason } = useAuthority();
   const createElection = useCreateElection();
-  // os padrões dependem do horário: `reset` usa os da renderização em que é chamado
-  const { values, errors, setErrors, update, reset } = useFormState<ElectionFormValues>(defaultElectionForm());
+  const { register, handleSubmit, reset, clearErrors, formState } = useForm<ElectionFormValues, unknown, CreateElectionInput>({
+    // os padrões dependem do horário: `reset` abaixo usa os do momento em que é chamado
+    defaultValues: defaultElectionForm(),
+    resolver: electionResolver,
+    reValidateMode: "onSubmit",
+  });
+  const { errors } = formState;
   const [created, setCreated] = useState<Address | undefined>();
 
   const blockedReason =
@@ -34,24 +40,18 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
       ? "Registre pelo menos um eleitor antes de criar a eleição."
       : undefined);
 
-  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    // validado no envio, com o horário de agora: a margem do início depende dele
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    const { errors: found, input } = validateElectionForm(values, nowSeconds);
-    setErrors(found);
-
-    if (!input || blockedReason) {
+  const onSubmit = handleSubmit((input) => {
+    if (blockedReason) {
       return;
     }
 
     createElection.mutate(input, {
       onSuccess: (address) => {
         setCreated(address);
-        reset();
+        reset(defaultElectionForm());
       },
     });
-  }
+  });
 
   return (
     <SectionCard
@@ -82,13 +82,12 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
           <Label htmlFor="election-title">Título</Label>
           <Input
             id="election-title"
-            value={values.title}
-            onChange={(event) => update("title", event.target.value)}
+            {...register("title", { onChange: () => clearErrors("title") })}
             placeholder="Representante da turma 2026"
             aria-invalid={!!errors.title}
             aria-describedby={errors.title ? "election-title-error" : undefined}
           />
-          <FieldError id="election-title-error" message={errors.title} />
+          <FieldError id="election-title-error" message={errors.title?.message} />
         </div>
 
         <div className="space-y-2">
@@ -96,12 +95,11 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
           <Input
             id="election-nomination-end"
             type="datetime-local"
-            value={values.nominationEnd}
-            onChange={(event) => update("nominationEnd", event.target.value)}
+            {...register("nominationEnd", { onChange: () => clearErrors("nominationEnd") })}
             aria-invalid={!!errors.nominationEnd}
             aria-describedby={errors.nominationEnd ? "election-nomination-end-error" : undefined}
           />
-          <FieldError id="election-nomination-end-error" message={errors.nominationEnd} />
+          <FieldError id="election-nomination-end-error" message={errors.nominationEnd?.message} />
           <p className="text-xs text-muted-foreground">
             Até lá, o presidente de cada partido indica um candidato.
           </p>
@@ -112,12 +110,11 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
           <Input
             id="election-start"
             type="datetime-local"
-            value={values.votingStart}
-            onChange={(event) => update("votingStart", event.target.value)}
+            {...register("votingStart", { onChange: () => clearErrors("votingStart") })}
             aria-invalid={!!errors.votingStart}
             aria-describedby={errors.votingStart ? "election-start-error" : undefined}
           />
-          <FieldError id="election-start-error" message={errors.votingStart} />
+          <FieldError id="election-start-error" message={errors.votingStart?.message} />
         </div>
 
         <div className="space-y-2">
@@ -125,12 +122,11 @@ export function CreateElectionCard({ registeredVoters }: { registeredVoters: num
           <Input
             id="election-end"
             type="datetime-local"
-            value={values.votingEnd}
-            onChange={(event) => update("votingEnd", event.target.value)}
+            {...register("votingEnd", { onChange: () => clearErrors("votingEnd") })}
             aria-invalid={!!errors.votingEnd}
             aria-describedby={errors.votingEnd ? "election-end-error" : undefined}
           />
-          <FieldError id="election-end-error" message={errors.votingEnd} />
+          <FieldError id="election-end-error" message={errors.votingEnd?.message} />
           <p className="text-xs text-muted-foreground">Horário local deste navegador.</p>
         </div>
 

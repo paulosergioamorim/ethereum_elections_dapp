@@ -376,6 +376,8 @@ describe("Party (página do partido)", () => {
       await waitFor(() => expect(wallet!.transactions).toHaveLength(1));
       expect(sentCall(wallet!)).toMatchObject({ to: party, functionName: "createCandidate", args: [alice, "Candidato Um"] });
       expect(await screen.findByRole("link", { name: /Candidato Um/ })).toHaveAttribute("href", `/candidates/${one.address}`);
+      expect(screen.getByLabelText("Nome do candidato")).toHaveValue("");
+      expect(screen.getByLabelText("Carteira do candidato")).toHaveValue("");
     });
 
     it("should clear only the edited field's error when the user types", async () => {

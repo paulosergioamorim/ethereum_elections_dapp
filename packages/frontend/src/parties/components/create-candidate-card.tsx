@@ -16,6 +16,9 @@ const emptyForm: CreateCandidateValues = { candidate: "", name: "" };
 
 /** Criar um candidato do partido: só o presidente vê. A carteira do candidato é quem saca as doações dele. */
 export function CreateCandidateCard({ party }: { party: Address }) {
+  // react-hook-form: o React Compiler memoizaria `register` e o `reset` não limparia os campos (AD-001)
+  "use no memo";
+
   const { isWrongChain } = useWallet();
   const createCandidate = useCreateCandidate(party);
   const { register, handleSubmit, reset, clearErrors, formState } = useForm({

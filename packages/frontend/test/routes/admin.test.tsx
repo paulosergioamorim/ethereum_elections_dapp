@@ -149,6 +149,7 @@ describe("Admin (aba da autoridade)", () => {
       "href",
       `/elections/${carol}`,
     );
+    await waitFor(() => expect(screen.getByLabelText("Título")).toHaveValue(""));
     expect(sentCall(wallet)).toMatchObject({
       functionName: "createElection",
       args: [

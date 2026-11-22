@@ -47,6 +47,7 @@ sequenceDiagram
 | --- | --- |
 | domain | none |
 | stored data | nothing to migrate |
+| convention | every component using `react-hook-form` opts out of the React Compiler with `"use no memo"` (AD-001) |
 | readers | the seven form cards; `validate*Form`, `parseAddress`, `parseEthAmount` and `parseVoterAddresses` either become schema pieces or stay as the parse step the schema calls; `use-form-state.ts` is deleted |
 
 ```mermaid

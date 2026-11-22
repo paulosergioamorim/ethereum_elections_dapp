@@ -51,3 +51,13 @@ export function parseForm<Schema extends v.GenericSchema>(
 
   return { errors: errors as FormErrors<v.InferInput<Schema>> };
 }
+
+/** Aponta uma mensagem para um campo de dentro de uma regra que olha o formulário inteiro. */
+export function addFieldIssue<Input extends Record<string, unknown>>(
+  addIssue: (info: { message: string; path: [v.IssuePathItem, ...v.IssuePathItem[]] }) => void,
+  input: Input,
+  key: keyof Input & string,
+  message: string,
+) {
+  addIssue({ message, path: [{ type: "object", origin: "value", input, key, value: input[key] }] });
+}
