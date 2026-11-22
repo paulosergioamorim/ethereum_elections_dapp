@@ -2,8 +2,8 @@
 
 **Approved**: 2026-11-22 - user: "implemente"
 **Settled mid-build:** none
-**Review:** <pending>
-**Fix pass:** <pending>
+**Review:** sent at 58a1a58
+**Fix pass:** done - `git diff --cached` now uses `--no-renames`, so moving files out of a package still selects it (finding 1, checked with a real `git mv` to `.specs/`); removed the empty `contracts/test/shared/` (2); the hook runs `pnpm scripts:test` when `scripts/` is staged (4); left unchanged: no automated test for `scripts/precommit.mjs` itself, i.e. the package list read from `package.json` and the exit code on failure (3, verified by hand in the review and in the build), and `pnpm-lock.yaml`/`pnpm-workspace.yaml` select no package, as criterion 9 says (5)
 
 ## Problem
 

@@ -4,7 +4,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { selectPackages } from "./select-packages.mjs";
 
-const staged = execFileSync("git", ["diff", "--cached", "--name-only", "--diff-filter=ACMRD"], {
+const staged = execFileSync("git", ["diff", "--cached", "--name-only", "--no-renames", "--diff-filter=ACMRD"], {
   encoding: "utf8",
 })
   .split("\n")

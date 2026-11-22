@@ -11,3 +11,8 @@ fi
 
 # Testes e typecheck só dos pacotes tocados (e dos que dependem deles).
 node scripts/precommit.mjs
+
+# Mexeu no script de seleção: roda os testes dele (nenhum pacote cobre `scripts/`).
+if git diff --cached --name-only | grep -q '^scripts/'; then
+  pnpm scripts:test || exit 1
+fi
