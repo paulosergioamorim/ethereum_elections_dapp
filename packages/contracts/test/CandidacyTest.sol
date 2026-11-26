@@ -78,7 +78,7 @@ contract CandidacyTest is ElectionFactoryNominationTestBase {
         vm.prank(donor);
         candidacy.donate{value: 1 ether}();
         vm.prank(president1);
-        factory.withdraw(election, party);
+        factory.withdrawNomination(election, party);
         vm.expectRevert(Candidacy.NominationInactive.selector);
         vm.prank(donor);
         candidacy.donate{value: 1 ether}();
@@ -125,7 +125,7 @@ contract CandidacyTest is ElectionFactoryNominationTestBase {
         vm.prank(donor);
         candidacy.donate{value: 1 ether}();
         vm.prank(president1);
-        factory.withdraw(election, party);
+        factory.withdrawNomination(election, party);
         address to = address(0x70);
         vm.prank(wallet);
         candidacy.withdraw(to, 1 ether);

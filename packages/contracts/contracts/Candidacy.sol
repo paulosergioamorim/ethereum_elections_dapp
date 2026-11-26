@@ -5,7 +5,7 @@ import {DonationHolder} from "./DonationHolder.sol";
 import {Candidate} from "./Candidate.sol";
 
 interface ICandidacyStatus {
-    function isActive(address candidacy) external view returns (bool);
+    function candidacyIsActive(address candidacy) external view returns (bool);
 }
 
 /// @dev Candidatura de um candidato a uma eleição: a associação n:n entre as duas. A carteira do
@@ -34,7 +34,7 @@ contract Candidacy is DonationHolder {
     }
 
     function donate() external payable override {
-        if (!_factory.isActive(address(this))) {
+        if (!_factory.candidacyIsActive(address(this))) {
             revert NominationInactive();
         }
 

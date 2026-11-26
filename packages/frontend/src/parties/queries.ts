@@ -187,7 +187,7 @@ async function fetchCandidacy(address: Address): Promise<CandidacyDetails> {
     publicClient.readContract({
       address: factoryAddress,
       abi: electionFactoryAbi,
-      functionName: "isActive",
+      functionName: "candidacyIsActive",
       args: [address],
       blockNumber,
     }),

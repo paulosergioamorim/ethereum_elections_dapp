@@ -20,7 +20,7 @@ contract ElectionFactoryWithdrawNominationTest is ElectionFactoryNominationTestB
 
         vm.recordLogs();
         vm.prank(president1);
-        factory.withdraw(election, party);
+        factory.withdrawNomination(election, party);
         Vm.Log[] memory logs = vm.getRecordedLogs();
         Vm.Log memory log = logs[logs.length - 1];
         assertEq(log.topics[0], ElectionFactory.NominationWithdrawn.selector);
@@ -28,8 +28,8 @@ contract ElectionFactoryWithdrawNominationTest is ElectionFactoryNominationTestB
 
         assertEq(factory.nomineesOf(address(election)).length, 0);
         assertEq(address(factory.nomineeOf(address(election), address(party))), address(0));
-        assertFalse(factory.isActive(address(candidacy)));
-        assertEq(factory.heldBy(address(candidate)), address(0));
+        assertFalse(factory.candidacyIsActive(address(candidacy)));
+        assertEq(factory.candidateHeldBy(address(candidate)), address(0));
     }
 
     function test_shouldMoveTheLastNomineeIntoTheFreedPosition() public {
@@ -42,7 +42,7 @@ contract ElectionFactoryWithdrawNominationTest is ElectionFactoryNominationTestB
         Candidacy third = _nominate(election, _candidate(party3));
 
         vm.prank(president1);
-        factory.withdraw(election, party1);
+        factory.withdrawNomination(election, party1);
 
         Candidacy[] memory list = factory.nomineesOf(address(election));
         assertEq(list.length, 2);
@@ -51,7 +51,7 @@ contract ElectionFactoryWithdrawNominationTest is ElectionFactoryNominationTestB
 
         // a posição movida continua certa: retirar o que foi movido
         vm.prank(president2);
-        factory.withdraw(election, party3);
+        factory.withdrawNomination(election, party3);
         list = factory.nomineesOf(address(election));
         assertEq(list.length, 1);
         assertEq(address(list[0]), address(second));
@@ -65,20 +65,20 @@ contract ElectionFactoryWithdrawNominationTest is ElectionFactoryNominationTestB
         _nominate(election, _candidate(party));
         vm.expectRevert(ElectionFactory.NotPartyPresident.selector);
         vm.prank(sender);
-        factory.withdraw(election, party);
+        factory.withdrawNomination(election, party);
     }
 
     function test_shouldRevertWithUnknownParty() public {
         Election election = _election();
         vm.expectRevert(ElectionFactory.UnknownParty.selector);
-        factory.withdraw(election, Party(address(0xDEAD)));
+        factory.withdrawNomination(election, Party(address(0xDEAD)));
     }
 
     function test_shouldRevertWithUnknownElection() public {
         Party party = _party(president1);
         vm.expectRevert(ElectionFactory.UnknownElection.selector);
         vm.prank(president1);
-        factory.withdraw(Election(address(0xDEAD)), party);
+        factory.withdrawNomination(Election(address(0xDEAD)), party);
     }
 
     function test_shouldRevertWithNotNominated() public {
@@ -86,7 +86,7 @@ contract ElectionFactoryWithdrawNominationTest is ElectionFactoryNominationTestB
         Party party = _party(president1);
         vm.expectRevert(ElectionFactory.NotNominated.selector);
         vm.prank(president1);
-        factory.withdraw(election, party);
+        factory.withdrawNomination(election, party);
     }
 
     function test_shouldRevertWithInvalidPhaseAfterNominationEnd() public {
@@ -102,7 +102,7 @@ contract ElectionFactoryWithdrawNominationTest is ElectionFactoryNominationTestB
             )
         );
         vm.prank(president1);
-        factory.withdraw(election, party);
+        factory.withdrawNomination(election, party);
     }
 
     // critério 18: retirar libera o candidato para outra eleição
@@ -113,8 +113,8 @@ contract ElectionFactoryWithdrawNominationTest is ElectionFactoryNominationTestB
         Candidate candidate = _candidate(party);
         _nominate(first, candidate);
         vm.prank(president1);
-        factory.withdraw(first, party);
+        factory.withdrawNomination(first, party);
         _nominate(second, candidate);
-        assertEq(factory.heldBy(address(candidate)), address(second));
+        assertEq(factory.candidateHeldBy(address(candidate)), address(second));
     }
 }

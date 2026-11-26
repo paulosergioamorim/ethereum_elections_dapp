@@ -399,7 +399,7 @@ describe("Election (página da eleição)", () => {
 
         await waitFor(() => expect(wallet.transactions).toHaveLength(1));
         expect(sentFactoryCall(wallet)).toMatchObject({
-          functionName: "withdraw",
+          functionName: "withdrawNomination",
           args: [electionAddress, partyAddress],
         });
         expect(await screen.findByText("Nenhum candidato indicado ainda.")).toBeInTheDocument();

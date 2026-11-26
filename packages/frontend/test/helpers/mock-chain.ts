@@ -199,9 +199,9 @@ export function mockChain({
       // factory
       case "owner":
         return byCandidacy ? byCandidacy.owner : candidate ? candidate.item.owner : party ? party.owner : owner;
-      case "heldBy":
+      case "candidateHeldBy":
         return listed.find(({ item }) => sameAddress(args?.[0], item.address))?.item.heldBy ?? zeroAddress;
-      case "isActive":
+      case "candidacyIsActive":
         return allNominees.find((nominee) => sameAddress(args?.[0], nominee.candidacy))?.active ?? false;
       case "sem":
         return semaphore;

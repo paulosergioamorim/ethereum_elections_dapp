@@ -306,6 +306,25 @@ export const electionFactoryAbi = [
     "inputs": [
       {
         "internalType": "address",
+        "name": "candidacy",
+        "type": "address"
+      }
+    ],
+    "name": "candidacyIsActive",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "election",
         "type": "address"
       },
@@ -319,6 +338,25 @@ export const electionFactoryAbi = [
     "outputs": [
       {
         "internalType": "contract Candidacy",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "candidate",
+        "type": "address"
+      }
+    ],
+    "name": "candidateHeldBy",
+    "outputs": [
+      {
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -431,44 +469,6 @@ export const electionFactoryAbi = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "candidate",
-        "type": "address"
-      }
-    ],
-    "name": "heldBy",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "candidacy",
-        "type": "address"
-      }
-    ],
-    "name": "isActive",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -701,7 +701,7 @@ export const electionFactoryAbi = [
         "type": "address"
       }
     ],
-    "name": "withdraw",
+    "name": "withdrawNomination",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

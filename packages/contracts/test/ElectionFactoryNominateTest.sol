@@ -25,8 +25,8 @@ contract ElectionFactoryNominateTest is ElectionFactoryNominationTestBase {
         assertEq(candidacy.party(), address(party));
         assertEq(address(factory.nomineeOf(address(election), address(party))), address(candidacy));
         assertEq(address(factory.candidacyOf(address(election), address(candidate))), address(candidacy));
-        assertTrue(factory.isActive(address(candidacy)));
-        assertEq(factory.heldBy(address(candidate)), address(election));
+        assertTrue(factory.candidacyIsActive(address(candidacy)));
+        assertEq(factory.candidateHeldBy(address(candidate)), address(election));
         assertEq(factory.nomineesOf(address(election)).length, 1);
         assertEq(address(factory.nomineesOf(address(election))[0]), address(candidacy));
     }
@@ -169,10 +169,10 @@ contract ElectionFactoryNominateTest is ElectionFactoryNominationTestBase {
         assertEq(address(list[0]), address(ofB));
         assertEq(address(list[1]), address(other));
         assertEq(address(factory.nomineeOf(address(election), address(party1))), address(ofB));
-        assertFalse(factory.isActive(address(ofA)));
-        assertTrue(factory.isActive(address(ofB)));
-        assertEq(factory.heldBy(address(a)), address(0));
-        assertEq(factory.heldBy(address(b)), address(election));
+        assertFalse(factory.candidacyIsActive(address(ofA)));
+        assertTrue(factory.candidacyIsActive(address(ofB)));
+        assertEq(factory.candidateHeldBy(address(a)), address(0));
+        assertEq(factory.candidateHeldBy(address(b)), address(election));
     }
 
     // critério 15
@@ -207,7 +207,7 @@ contract ElectionFactoryNominateTest is ElectionFactoryNominationTestBase {
         _nominate(first, a);
         _nominate(first, b);
         _nominate(second, a);
-        assertEq(factory.heldBy(address(a)), address(second));
+        assertEq(factory.candidateHeldBy(address(a)), address(second));
     }
 
     // critério 19: a candidatura de um candidato preso só termina em votingEnd
@@ -233,7 +233,7 @@ contract ElectionFactoryNominateTest is ElectionFactoryNominationTestBase {
         assertTrue(first.phase() == ElectionPhase.Tally);
         Election second = _election();
         _nominate(second, candidate);
-        assertEq(factory.heldBy(address(candidate)), address(second));
+        assertEq(factory.candidateHeldBy(address(candidate)), address(second));
     }
 
     // critério 20
@@ -243,10 +243,10 @@ contract ElectionFactoryNominateTest is ElectionFactoryNominationTestBase {
         Candidate candidate = _candidate(party);
         Candidacy first = _nominate(election, candidate);
         vm.prank(president1);
-        factory.withdraw(election, party);
+        factory.withdrawNomination(election, party);
         Candidacy again = _nominate(election, candidate);
         assertEq(address(again), address(first));
-        assertTrue(factory.isActive(address(again)));
+        assertTrue(factory.candidacyIsActive(address(again)));
         assertEq(factory.nomineesOf(address(election)).length, 1);
     }
 
@@ -261,7 +261,7 @@ contract ElectionFactoryNominateTest is ElectionFactoryNominationTestBase {
         vm.prank(donor);
         first.donate{value: 2 ether}();
         vm.prank(president1);
-        factory.withdraw(election, party);
+        factory.withdrawNomination(election, party);
         Candidacy again = _nominate(election, candidate);
         assertEq(address(again).balance, 2 ether);
         assertEq(again.donatedBy(donor), 2 ether);

@@ -17,9 +17,9 @@ How I checked:
 | Contract `Candidacy`, an n:n association between Election and Candidate | `Candidacy.sol` is a clone per (election, candidate) pair. `candidacyOf[election][candidate]` is created once and reused. It holds `election`, `candidate` and `party`. | OK |
 | Candidacy replaces the string array in the election | `CreateElectionCommand.candidates` and `InvalidCandidatesQuantity` are removed. `Election.candidates()` returns `Candidacy[]` from `factory.nomineesOf`. The tally is `mapping _votes` and `results()` is sized to the nominee count. A grep finds no remaining reference except in the plan text. | OK |
 | New election state where parties publish candidates, one per party | `ElectionPhase.Nomination` is value 0, ended by `nominationEnd` (`nominationEnd > now`, `<= votingStart`). `nominate` is restricted to the party president (`Party.owner()`). `nomineeOf[election][party]` holds one entry. Nominating another candidate of the same party replaces the nominee at the same list position. `withdraw` removes the nominee. | OK |
-| A candidate cannot run in more than one election at a time | `heldBy[candidate]` is set on nomination. It is cleared on withdraw or replacement. `CandidateBusy(held)` is raised while `held.votingEnd() > now`. It is free from `votingEnd` on. | OK |
+| A candidate cannot run in more than one election at a time | `candidateHeldBy[candidate]` is set on nomination. It is cleared on withdraw or replacement. `CandidateBusy(held)` is raised while `held.votingEnd() > now`. It is free from `votingEnd` on. | OK |
 | Follow-up: the candidacy can also receive donations | `Candidacy is DonationHolder`. `donate` refuses with `NominationInactive` once the nomination is withdrawn or replaced. The candidate wallet is `owner()` and can always withdraw, so the balance stays reachable. The frontend has a donate form per nominee and a "Suas candidaturas com saldo" card. | OK |
-| Follow-up: do everything in `ElectionFactory` | No registry contract. `nominate`, `withdraw`, `nomineesOf`, `nomineeOf`, `candidacyOf`, `isActive` and `heldBy` are all in `ElectionFactory`. Deployed factory size is 14,899 bytes, well under 24 KB. | OK |
+| Follow-up: do everything in `ElectionFactory` | No registry contract. `nominate`, `withdrawNomination`, `nomineesOf`, `nomineeOf`, `candidacyOf`, `candidacyIsActive` and `candidateHeldBy` are all in `ElectionFactory`. Deployed factory size is 14,899 bytes, well under 24 KB. | OK |
 
 The request.md answers also say the deadline is called `candidacyEnd` and the phase "Candidacy". The plan and code use `nominationEnd` / `Nomination`. The plan names this choice and the user approved the plan ("implemente"), so I treat it as settled.
 
@@ -59,7 +59,7 @@ I reasoned from each assertion. I did not mutate the code.
 3. **Low (test gap): criterion 20 says balance and `donatedBy` are kept when a withdrawn candidate is nominated again.** The test asserts only the same address, which is what the implementation guarantees. A test that donates, withdraws, nominates again and then checks the balance would state the donor-protection reason for door 3.
 
 4. **Low (test gap, frontend): two cases have no test.**
-   - Criterion 48, the pt-BR toast when `nominate` or `withdraw` reverts, has no route test. Only `errors.test.ts` covers the messages. Whether the card sends the revert through the toast is untested.
+   - Criterion 48, the pt-BR toast when `nominate` or `withdrawNomination` reverts, has no route test. Only `errors.test.ts` covers the messages. Whether the card sends the revert through the toast is untested.
    - The 120-second minimum for `nominationEnd` is tested only at `at(1)`, so a `<` that became `<=` would not be caught.
 
 5. **Trivial: a stray file was committed.** `.agents/scheduled_tasks.lock` was added in f194b8c. It contains a session id and pid, is not ignored and is unrelated to the feature. It should be removed from the repository and git-ignored.
@@ -69,5 +69,5 @@ I reasoned from each assertion. I did not mutate the code.
 ## Not defects, noted for the record
 
 - The factory must be redeployed and `VITE_FACTORY_ADDRESS` updated. The plan names this as an operator action. The old Ignition deployments under `packages/contracts/ignition/deployments` still carry the old ABI and were not touched.
-- A candidacy whose election has reached tally stays `isActive` and still accepts donations. The spec does not forbid it.
+- A candidacy whose election has reached tally stays `candidacyIsActive` and still accepts donations. The spec does not forbid it.
 - The plan header still says "Fix pass: pending". That is expected at this point.

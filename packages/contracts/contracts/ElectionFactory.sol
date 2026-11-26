@@ -46,9 +46,10 @@ contract ElectionFactory is Ownable {
     mapping(address election => mapping(address party => Candidacy)) public nomineeOf;
     /// @dev A candidatura (ativa ou não) de um candidato na eleição; criada uma vez e reaproveitada.
     mapping(address election => mapping(address candidate => Candidacy)) public candidacyOf;
-    mapping(address candidacy => bool) public isActive;
+    /// @dev Se a candidatura está ativa (p. ex.: presidente indicou e depois desindicou).
+    mapping(address candidacy => bool) public candidacyIsActive;
     /// @dev Eleição que prende o candidato por uma indicação ativa.
-    mapping(address candidate => address) public heldBy;
+    mapping(address candidate => address) public candidateHeldBy;
 
     event ElectionCreated(address indexed election);
     event PartyCreated(address indexed party);
@@ -182,7 +183,7 @@ contract ElectionFactory is Ownable {
         _requireNomination(election);
 
         Candidacy previous = nomineeOf[address(election)][party];
-        address held = heldBy[address(candidate)];
+        address held = candidateHeldBy[address(candidate)];
 
         if (held == address(election)) {
             revert AlreadyNominated();
@@ -206,8 +207,8 @@ contract ElectionFactory is Ownable {
             candidacyOf[address(election)][address(candidate)] = candidacy;
         }
 
-        isActive[address(candidacy)] = true;
-        heldBy[address(candidate)] = address(election);
+        candidacyIsActive[address(candidacy)] = true;
+        candidateHeldBy[address(candidate)] = address(election);
         nomineeOf[address(election)][party] = candidacy;
 
         if (address(previous) == address(0)) {
@@ -229,7 +230,7 @@ contract ElectionFactory is Ownable {
     }
 
     /// @dev Retira o indicado do partido; a candidatura fica inativa e o saldo continua sacável.
-    function withdraw(Election election, Party party) external {
+    function withdrawNomination(Election election, Party party) external {
         if (!isElection[address(election)]) {
             revert UnknownElection();
         }
@@ -283,8 +284,8 @@ contract ElectionFactory is Ownable {
     }
 
     function _deactivate(Candidacy candidacy) private {
-        isActive[address(candidacy)] = false;
-        delete heldBy[address(candidacy.candidate())];
+        candidacyIsActive[address(candidacy)] = false;
+        delete candidateHeldBy[address(candidacy.candidate())];
     }
 
     function parties() external view returns (Party[] memory) {

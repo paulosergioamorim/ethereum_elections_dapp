@@ -415,7 +415,7 @@ export function useNominate(election: Address) {
   });
 }
 
-/** `withdraw` da factory: o presidente retira o indicado do partido; o saldo da candidatura fica sacável. */
+/** `withdrawNomination` da factory: o presidente retira o indicado do partido; o saldo da candidatura fica sacável. */
 export function useWithdrawNomination(election: Address) {
   const { walletClient } = useWallet();
   const queryClient = useQueryClient();
@@ -436,7 +436,7 @@ export function useWithdrawNomination(election: Address) {
             account: client.account,
             address: factoryAddress,
             abi: electionFactoryAbi,
-            functionName: "withdraw",
+            functionName: "withdrawNomination",
             args: [election, party],
           });
 

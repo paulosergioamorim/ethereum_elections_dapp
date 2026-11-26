@@ -280,7 +280,7 @@ async function fetchCandidateHold(candidate: Address): Promise<CandidateHold | n
   const election = await publicClient.readContract({
     address: factoryAddress,
     abi: electionFactoryAbi,
-    functionName: "heldBy",
+    functionName: "candidateHeldBy",
     args: [candidate],
     blockNumber,
   });

@@ -21,7 +21,7 @@ Terms: `Candidacy` is the n:n association itself, one clone per (election, candi
 2. `Election` (exists) - validates `now < nominationEnd <= votingStart < votingEnd`, stores `nominationEnd` and the factory address; `phase()` gains `Nomination`
 3. president calls `ElectionFactory.nominate(election, candidate)` -> `ElectionFactory` (exists) - checks election and party belong to the factory, `msg.sender` is `Party.owner()` of the candidate's party, `election.phase()` is `Nomination`, the candidate is free; creates (or reuses) the `Candidacy` clone of that (election, candidate) pair, marks it active, makes it the party's nominee (replacing a previous one) and holds the candidate until `election.votingEnd()`
 4. `ElectionFactory` (exists) -> `Candidacy` (new) - `initialize(owner = candidate wallet, election, candidate, factory)` runs once per clone
-5. president calls `ElectionFactory.withdraw(election, party)` -> `ElectionFactory` (exists) - same checks; removes the party's nominee, deactivates its `Candidacy` (balance stays), frees the candidate
+5. president calls `ElectionFactory.withdrawNomination(election, party)` -> `ElectionFactory` (exists) - same checks; removes the party's nominee, deactivates its `Candidacy` (balance stays), frees the candidate
 6. donor calls `Candidacy.donate()` / candidate wallet calls `Candidacy.withdraw(to, amount)` -> `Candidacy` (new) via `DonationHolder` - donate only while active; withdraw always
 7. voter calls `Election.vote` / anyone calls `revealBatch` / `results` -> `Election` (exists) - reads the ordered nominee list (`Candidacy[]`) from the factory, frozen once `nominationEnd` passes; the option index of a vote is the position in that list, an option past the end is a null vote
 8. reader opens `/elections/:address` -> election route (exists) - reads `candidacies()`, each `Candidacy`'s candidate name and party, balance; president sees "Indicar candidato" during `Nomination`; donate and withdraw forms per nominee
@@ -40,7 +40,7 @@ sequenceDiagram
     Pr->>F: 3. nominate(election, candidate)
     F->>E: 3. phase(), votingEnd()
     F->>Y: 4. clone + initialize(owner, election, candidate)
-    Pr->>F: 5. withdraw(election, party)
+    Pr->>F: 5. withdrawNomination(election, party)
     D->>Y: 6. donate() + ETH
     V->>E: 7. vote(proof, commitment, ciphertext)
     E->>F: 7. nomineesOf(election)
@@ -90,8 +90,8 @@ Contract calls (200 success, 403 revert for a caller who may not call, 400 other
 | --- | --- | --- | --- | --- |
 | `ElectionFactory.createElection(CreateElectionCommand{title, nominationEnd, votingStart, votingEnd})` | command | `Election` | 200; 403 `OwnableUnauthorizedAccount`; 400 `InvalidNominationEnd`, `InvalidVotingStart`, `InvalidVotingDuration` | the factory owner; others get 403 |
 | `ElectionFactory.nominate(Election election, Candidate candidate)` | election, candidate | `Candidacy`; event `Nominated(election, party, candidate, candidacy)` | 200; 403 `NotPartyPresident`; 400 `UnknownElection`, `UnknownCandidate`, `InvalidPhase`, `AlreadyNominated`, `CandidateBusy` | the president of the candidate's party; others get 403 |
-| `ElectionFactory.withdraw(Election election, Party party)` | election, party | event `NominationWithdrawn(election, party, candidate, candidacy)` | 200; 403 `NotPartyPresident`; 400 `UnknownElection`, `UnknownParty`, `InvalidPhase`, `NotNominated` | the president of `party`; others get 403 |
-| `ElectionFactory.nomineesOf(election)` / `nomineeOf(election, party)` / `candidacyOf(election, candidate)` / `isActive(candidacy)` / `heldBy(candidate)` | - | `Candidacy[]` / `Candidacy` / `Candidacy` / `bool` / `Election` | 200 | anyone |
+| `ElectionFactory.withdrawNomination(Election election, Party party)` | election, party | event `NominationWithdrawn(election, party, candidate, candidacy)` | 200; 403 `NotPartyPresident`; 400 `UnknownElection`, `UnknownParty`, `InvalidPhase`, `NotNominated` | the president of `party`; others get 403 |
+| `ElectionFactory.nomineesOf(election)` / `nomineeOf(election, party)` / `candidacyOf(election, candidate)` / `candidacyIsActive(candidacy)` / `candidateHeldBy(candidate)` | - | `Candidacy[]` / `Candidacy` / `Candidacy` / `bool` / `Election` | 200 | anyone |
 | `Candidacy.donate()` payable | ETH | event `Donated` | 200; 400 `ZeroDonation`, `NominationInactive` | anyone |
 | `Candidacy.withdraw(address to, uint256 amount)` | to, amount | event `Withdrawn` | 200; 403 `OwnableUnauthorizedAccount`; 400 `InvalidRecipient`, `InsufficientBalance`, `WithdrawFailed` | the candidate wallet; others get 403 |
 | `Candidacy.election()` / `candidate()` / `party()` | - | `Election` / `Candidate` / `Party` | 200 | anyone |
@@ -104,7 +104,7 @@ Contract calls (200 success, 403 revert for a caller who may not call, 400 other
 | --- | --- | --- |
 | Option index of a vote | `option` = position in `ElectionFactory.nomineesOf(election)`; replacing keeps the position, withdrawing swaps the last nominee into the freed position; the list is frozen from `nominationEnd` on; option `>= length` is a null vote | indexing by party creation order - a party without a nominee would leave holes in the ballot |
 | Contract split | `ElectionFactory` holds `address private immutable _candidacyBase = address(new Candidacy())`, clones it in `nominate` and runs `initialize(candidateWallet, election, candidate, address(this))`; `Candidacy is DonationHolder` with `_disableInitializers()`; no separate registry contract (user: "faça tudo no ElectionFactory") | a separate registry contract - rejected by the user; one global contract with per-pair balances - duplicates donate/withdraw and the user chose clones |
-| One clone per pair | `candidacyOf[election][candidate]` is created once and reused when the same candidate is nominated again to the same election; withdrawing only flips `isActive` | a new clone per nomination - donors of an earlier nomination would be orphaned on a second address |
+| One clone per pair | `candidacyOf[election][candidate]` is created once and reused when the same candidate is nominated again to the same election; withdrawing only flips `candidacyIsActive` | a new clone per nomination - donors of an earlier nomination would be orphaned on a second address |
 | Election tally storage | `mapping(uint256 option => uint256) private _votes` replaces `uint256[] _tally`; `results()` still returns `uint256[]` sized to the nominee count | pushing zeros at `initialize` - the count is unknown until `nominationEnd` |
 
 - Nothing else in this change is hard to reverse
@@ -120,7 +120,7 @@ Contract calls (200 success, 403 revert for a caller who may not call, 400 other
 2. IF `nominationEnd` <= `block.timestamp` or `nominationEnd` > `votingStart` THEN `initialize` SHALL revert with `InvalidNominationEnd` (checked after `InvalidVotingStart` and `InvalidVotingDuration`)
 3. The election SHALL NOT take candidate names in `CreateElectionCommand`, SHALL have no `InvalidCandidatesQuantity`, and SHALL accept an election that has no nominee
 4. WHEN `phase()` is read THEN it SHALL be `Nomination` while now < `nominationEnd`, `Scheduled` while `nominationEnd` <= now < `votingStart`, `Voting` while `votingStart` <= now < `votingEnd`, and `Tally` from `votingEnd`
-5. WHEN the president of a party calls `nominate(election, candidate)` with an election of the factory in phase `Nomination` and a candidate created by that party THEN the factory SHALL clone a `Candidacy` with `owner()` equal to `candidate.owner()`, `election()`, `candidate()` and `party()` set, record it as the party's nominee, make `nomineesOf(election)` end with it, set `isActive` true, `candidacyOf(election, candidate)` to it, `heldBy(candidate)` to the election and emit `Nominated(election, party, candidate, candidacy)`
+5. WHEN the president of a party calls `nominate(election, candidate)` with an election of the factory in phase `Nomination` and a candidate created by that party THEN the factory SHALL clone a `Candidacy` with `owner()` equal to `candidate.owner()`, `election()`, `candidate()` and `party()` set, record it as the party's nominee, make `nomineesOf(election)` end with it, set `candidacyIsActive` true, `candidacyOf(election, candidate)` to it, `candidateHeldBy(candidate)` to the election and emit `Nominated(election, party, candidate, candidacy)`
 6. IF `msg.sender` is not `Party.owner()` of the candidate's party THEN `nominate` SHALL revert with `NotPartyPresident`
 7. IF `election` is not in the factory's `isElection` THEN `nominate` SHALL revert with `UnknownElection`
 8. IF the candidate's `party()` is not in the factory's `isParty`, or that party's `isCandidate(candidate)` is false THEN `nominate` SHALL revert with `UnknownCandidate` (a hand-deployed `Candidate` claiming a real party is rejected)
@@ -135,16 +135,16 @@ Contract calls (200 success, 403 revert for a caller who may not call, 400 other
 
 **Acceptance Criteria**
 
-14. WHEN a party whose nominee is A nominates B (same party) in the same election during `Nomination` THEN `nomineeOf` SHALL be B's `Candidacy` at A's position in the list, A's `Candidacy` SHALL become inactive, `heldBy(A)` SHALL be the zero address, `heldBy(B)` SHALL be the election and the event SHALL be `Nominated`
+14. WHEN a party whose nominee is A nominates B (same party) in the same election during `Nomination` THEN `nomineeOf` SHALL be B's `Candidacy` at A's position in the list, A's `Candidacy` SHALL become inactive, `candidateHeldBy(A)` SHALL be the zero address, `candidateHeldBy(B)` SHALL be the election and the event SHALL be `Nominated`
 15. IF the party nominates the candidate who is already its active nominee in that election THEN `nominate` SHALL revert with `AlreadyNominated`
-16. WHEN the president calls `withdraw(election, party)` during `Nomination` THEN the factory SHALL remove the nominee, set its `Candidacy` inactive, free the candidate (`heldBy` zero), keep the other nominees in order (the last takes the freed position) and emit `NominationWithdrawn(election, party, candidate, candidacy)`
-17. IF `withdraw` is called by someone who is not `Party.owner()` of `party` THEN it SHALL revert with `NotPartyPresident`; IF `party` is not in the factory's `isParty` THEN `UnknownParty`; IF `election` is unknown THEN `UnknownElection`; IF the party has no nominee in that election THEN `NotNominated`; IF the phase is not `Nomination` THEN `InvalidPhase(current, Nomination)`
-18. IF a candidate is `heldBy` an election whose `votingEnd` is still in the future and `nominate` names a different election THEN it SHALL revert with `CandidateBusy(heldElection)`
+16. WHEN the president calls `withdrawNomination(election, party)` during `Nomination` THEN the factory SHALL remove the nominee, set its `Candidacy` inactive, free the candidate (`candidateHeldBy` zero), keep the other nominees in order (the last takes the freed position) and emit `NominationWithdrawn(election, party, candidate, candidacy)`
+17. IF `withdrawNomination` is called by someone who is not `Party.owner()` of `party` THEN it SHALL revert with `NotPartyPresident`; IF `party` is not in the factory's `isParty` THEN `UnknownParty`; IF `election` is unknown THEN `UnknownElection`; IF the party has no nominee in that election THEN `NotNominated`; IF the phase is not `Nomination` THEN `InvalidPhase(current, Nomination)`
+18. IF a candidate is `candidateHeldBy` an election whose `votingEnd` is still in the future and `nominate` names a different election THEN it SHALL revert with `CandidateBusy(heldElection)`
     - held by E1 (`votingEnd` tomorrow), nominate to E2 → `CandidateBusy(E1)`; E1 withdrawn → accepted; E1 replaced by another candidate → accepted
 19. WHEN the election that holds a candidate reaches `votingEnd` (phase `Tally`) THEN a nomination of that candidate to another election SHALL be accepted
     - at `votingEnd - 1` → `CandidateBusy`; at `votingEnd` → accepted
 20. WHEN a candidate withdrawn from an election is nominated again to the same election during `Nomination` THEN the factory SHALL reuse the existing `Candidacy` (same address, balance and `donatedBy` kept) and set it active; a party SHALL never have two active nominees in one election
-21. WHILE the phase is not `Nomination` the nominee list of an election SHALL NOT change: `nominate` and `withdraw` revert with `InvalidPhase`
+21. WHILE the phase is not `Nomination` the nominee list of an election SHALL NOT change: `nominate` and `withdrawNomination` revert with `InvalidPhase`
 
 ### S3: Votes and the tally follow the nominee list (P1)
 
@@ -193,8 +193,8 @@ Contract calls (200 success, 403 revert for a caller who may not call, 400 other
 44. WHILE the election is in `Nomination` and the connected account is the president of at least one factory party, the election page SHALL show the "Indicar candidato" card; for any other account, no wallet, or any other phase it SHALL NOT be shown
 45. WHEN the president opens the card THEN it SHALL list, per party they preside, that party's candidates (name, wallet) to choose from, mark the current nominee, and show candidates held by another election as unavailable with "Já concorre em outra eleição."
 46. WHEN the president picks a candidate and clicks "Indicar" THEN the app SHALL send `nominate`, show the toast and, once mined, the nominee SHALL appear in the page's nominee list; picking another candidate of the same party SHALL replace the nominee
-47. WHEN the president clicks "Retirar indicação" on the party's nominee THEN the app SHALL send `withdraw` and, once mined, the nominee SHALL leave the list
-48. IF `nominate` or `withdraw` reverts THEN the toast SHALL show the pt-BR message for the error
+47. WHEN the president clicks "Retirar indicação" on the party's nominee THEN the app SHALL send `withdrawNomination` and, once mined, the nominee SHALL leave the list
+48. IF `nominate` or `withdrawNomination` reverts THEN the toast SHALL show the pt-BR message for the error
 49. WHEN a party has no candidates THEN the card SHALL say "Este partido ainda não tem candidatos." with a link to the party page
 
 ### S7: Donate to and withdraw from a candidacy on the election page (P1)
